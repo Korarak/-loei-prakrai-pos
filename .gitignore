@@ -1,0 +1,13 @@
+# secrets — never commit (contains live VPS/registry credentials)
+vps-handoff-pos.local.md
+*.local.md
+.env
+.env.*
+!.env.example
+
+node_modules/
+dist/
+.next/
+coverage/
+*.log
+.DS_Store
