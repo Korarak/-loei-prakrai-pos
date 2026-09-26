@@ -1,0 +1,19 @@
+# Local development database only. Production compose lives in deploy/.
+name: prakai-dev
+services:
+  pos-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: devpass
+      POSTGRES_DB: prakai
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - prakai_dev_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 3s
+      retries: 20
+volumes:
+  prakai_dev_db:
