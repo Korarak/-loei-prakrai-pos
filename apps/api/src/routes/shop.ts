@@ -78,8 +78,10 @@ export async function shopRoutes(app: FastifyInstance, ctx: Ctx) {
   app.get('/api/menu', { preHandler: ctx.auth() }, async (req) =>
     withTenant(ctx.db, req.session.tenantId, async (c) => ({
       categories: await many(c, `SELECT id, name, sort FROM menu_categories ORDER BY sort, name`),
-      items: await many(c, `SELECT id, category_id, name, price, vat_exempt, station, image_url, active, sort
-                              FROM menu_items ORDER BY sort, name`),
+      // grouped by category order so the "all" view reads like the printed menu
+      items: await many(c, `SELECT i.id, i.category_id, i.name, i.price, i.vat_exempt, i.station, i.image_url, i.active, i.sort
+                              FROM menu_items i LEFT JOIN menu_categories k ON k.id = i.category_id
+                             ORDER BY k.sort NULLS LAST, i.sort, i.name`),
     })));
 
   app.post('/api/menu/categories', { preHandler: ctx.auth(atLeast('manager')) }, async (req, reply) => {

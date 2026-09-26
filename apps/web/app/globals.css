@@ -1,0 +1,70 @@
+/* Tokens from the prakai-pos UI canvas: white, herb-green accent, big touch targets. */
+:root {
+  --bg: #f5f6f3;
+  --surface: #ffffff;
+  --ink: #1b1f1d;
+  --muted: #5e6661;
+  --muted-2: #4f5752;
+  --line: #e3e6e1;
+  --line-2: #d5dad3;
+  --line-soft: #eef0ec;
+  --accent: #17784a;
+  --accent-ink: #0f5c37;
+  --accent-soft: #e6f2ea;
+  --warn: #b45309;
+  --warn-ink: #8a3f06;
+  --warn-soft: #fdf0e1;
+  --info-ink: #2c4686;
+  --info-soft: #eef1f8;
+  --radius: 14px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body), 'IBM Plex Sans Thai', sans-serif;
+  font-variant-numeric: tabular-nums;
+  -webkit-tap-highlight-color: transparent;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: var(--accent); text-decoration: none; }
+h1, .display { font-family: var(--font-display), var(--font-body), sans-serif; }
+
+.btn {
+  min-height: 48px; padding: 0 18px; border-radius: 12px; border: 1px solid var(--line-2);
+  background: var(--surface); font-size: 16px; font-weight: 600; display: inline-flex;
+  align-items: center; justify-content: center; gap: 8px; color: var(--ink);
+}
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-outline { border-color: var(--accent); color: var(--accent); }
+.btn-warn { border-color: var(--warn); color: var(--warn-ink); }
+.btn-lg { min-height: 64px; font-size: 19px; border-radius: 14px; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
+.muted { color: var(--muted); }
+.row { display: flex; align-items: center; gap: 12px; }
+.spacer { flex: 1; }
+.pill { padding: 3px 10px; border-radius: 10px; font-size: 13px; font-weight: 600; }
+
+.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--muted-2); }
+.field input, .field select {
+  height: 50px; padding: 0 14px; border-radius: 12px; border: 1px solid #c9cfc7; font-size: 17px;
+  color: var(--ink); background: #fff;
+}
+.error { background: var(--warn-soft); color: var(--warn-ink); border-radius: 12px; padding: 10px 14px; font-size: 15px; }
+
+.topbar {
+  height: 68px; display: flex; align-items: center; gap: 12px; padding: 0 24px; background: var(--surface);
+  border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5;
+}
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display), sans-serif; font-size: 24px; font-weight: 700; }
+.brand small { font-family: var(--font-body); font-size: 14px; color: var(--muted); font-weight: 600; }
+
+@media print {
+  body { background: #fff; }
+  .no-print { display: none !important; }
+}

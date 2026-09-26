@@ -18,6 +18,15 @@ describe('auth', () => {
     expect(s.tables).toHaveLength(5);
   });
 
+  it('lists the menu grouped by category order', async () => {
+    const s = await newShop(app, { vat: false, posId: null });
+    const menu = (await s.call('GET', '/api/menu')).body;
+    const catSort = new Map(menu.categories.map((c: any) => [c.id, c.sort]));
+    const seq = menu.items.map((i: any) => catSort.get(i.category_id));
+    expect(seq).toEqual([...seq].sort((a: number, b: number) => a - b));
+    expect(menu.items[0].name).toBe('ข้าวผัดกุ้ง');
+  });
+
   it('rejects a wrong password and a duplicate email', async () => {
     const s = await newShop(app, { vat: false, posId: null });
     const bad = await app.inject({ method: 'POST', url: '/api/auth/login', payload: { email: s.email, password: 'nope-nope' } });
