@@ -1,0 +1,80 @@
+name: Build and Deploy POS
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_PASSWORD: devpass }
+        ports: ["5433:5432"]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test   # test/global-setup.ts recreates and migrates prakai_test
+
+  build:
+    runs-on: ubuntu-24.04
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - { name: backend,  dockerfile: ./apps/api/Dockerfile }
+          - { name: frontend, dockerfile: ./apps/web/Dockerfile }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.REGISTRY_URL }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ secrets.REGISTRY_URL }}/pos-${{ matrix.name }}:latest
+          labels: project=pos
+          cache-from: type=gha,scope=pos-${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=pos-${{ matrix.name }}
+
+  deploy:
+    runs-on: ubuntu-24.04
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_SSH_HOST }}
+          port: ${{ secrets.SERVER_SSH_PORT }}
+          username: ${{ secrets.SERVER_SSH_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: deploy/docker-compose.yml
+          strip_components: 1
+          target: /home/${{ secrets.SERVER_SSH_USERNAME }}/pos
+      - uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_SSH_HOST }}
+          port: ${{ secrets.SERVER_SSH_PORT }}
+          username: ${{ secrets.SERVER_SSH_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e
+            cd /home/${{ secrets.SERVER_SSH_USERNAME }}/pos
+            echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_URL }} -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
+            export REGISTRY_URL=${{ secrets.REGISTRY_URL }}
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker image prune -f --filter "label=project=pos"
+            sleep 20
+            docker ps --format '{{.Names}} {{.Status}}' | grep -E '^pos-'
+            curl -fsS https://banrukrot.com/api/status

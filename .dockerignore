@@ -1,0 +1,14 @@
+# Build context is the repo root; keep secrets, local installs and build output out of images.
+**/node_modules
+**/.next
+**/coverage
+**/*.tsbuildinfo
+.git
+.github
+.claude
+docs
+deploy
+*.local.md
+**/.env
+**/.env.*
+*.xlsx

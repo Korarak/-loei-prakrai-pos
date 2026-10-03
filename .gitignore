@@ -14,3 +14,7 @@ coverage/
 
 # reference spreadsheets from third parties (licensed for personal use; keep out of the repo)
 *.xlsx
+
+# personal Claude Code settings
+.claude/settings.local.json
+*.tsbuildinfo
