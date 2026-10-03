@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   allocate, baht, calcBill, contributionMargin, docPeriod, formatBaht, formatDocNo, isValidThaiTaxId,
-  microFromBahtPerUnit, movingAverage, pct, recipeCost, roundCash, vatRateOn, type BillSettings,
+  menuEngineering, microFromBahtPerUnit, crc16, promptPayPayload, movingAverage, pct, recipeCost, roundCash, unitCostOf, valueOf, vatRateOn,
+  type BillSettings,
 } from './index.ts';
 
 const VAT_EXCL: BillSettings = { vatRegistered: true, priceIncludesVat: false, vatRate: 700, serviceChargeRate: 1000 };
@@ -109,6 +110,28 @@ describe('costing — design doc §4 examples', () => {
   });
 });
 
+describe('purchases and menu engineering', () => {
+  it('unit cost of 1 kg shrimp bought for 180 baht is 0.18 baht/g, and 40 g is worth 7.20', () => {
+    const c = unitCostOf(baht(180), 1000);
+    expect(c).toBe(microFromBahtPerUnit(0.18));
+    expect(valueOf(40, c)).toBe(720);
+  });
+
+  it('sorts dishes into star / plowhorse / puzzle / dog', () => {
+    const m = menuEngineering([
+      { id: 'friedRice', qty: 100, margin: 100 * 3757 }, // popular, high margin
+      { id: 'rice', qty: 120, margin: 120 * 500 },        // popular, low margin
+      { id: 'tomYum', qty: 10, margin: 10 * 8000 },       // rare, high margin
+      { id: 'water', qty: 5, margin: 5 * 300 },           // rare, low margin
+    ]);
+    expect(Object.fromEntries(m)).toEqual({ friedRice: 'star', rice: 'plowhorse', tomYum: 'puzzle', water: 'dog' });
+  });
+
+  it('ignores dishes that did not sell', () => {
+    expect(menuEngineering([{ id: 'a', qty: 0, margin: 0 }]).size).toBe(0);
+  });
+});
+
 describe('tax helpers', () => {
   const periods = [
     { rate: 700, from: '2025-10-01', to: '2026-09-30' },
@@ -130,5 +153,28 @@ describe('tax helpers', () => {
   it('formats baht', () => {
     expect(formatBaht(126430000)).toBe('1,264,300.00');
     expect(formatBaht(-30)).toBe('-0.30');
+  });
+});
+
+describe('PromptPay QR payload', () => {
+  it('uses the CRC-16/CCITT-FALSE check value', () => expect(crc16('123456789')).toBe('29B1'));
+
+  it('encodes a mobile number as 0066 + number and a fixed amount as a one-time QR', () => {
+    const p = promptPayPayload('081-234-5678', 36000);
+    expect(p.slice(0, -4)).toBe('00020101021229370016A0000006770101110113006681234567853037645406360.005802TH6304');
+    expect(p).toContain('0113006681234567');
+    expect(p).toContain('5406360.00');
+    expect(p.slice(-8, -4)).toBe('6304');
+    expect(p.slice(-4)).toBe(crc16(p.slice(0, -4)));
+  });
+
+  it('encodes a tax ID and makes a static QR without an amount', () => {
+    const p = promptPayPayload('0105512345671');
+    expect(p).toContain('01021129370016A00000067701011102130105512345671');
+    expect(p).not.toContain('54');
+  });
+
+  it('refuses anything that is not a phone or 13-digit ID', () => {
+    expect(() => promptPayPayload('12345')).toThrow(RangeError);
   });
 });
