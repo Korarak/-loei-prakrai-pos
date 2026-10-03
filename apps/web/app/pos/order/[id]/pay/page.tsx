@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
 import { BackIcon } from '@/lib/ui';
+import { PromptPayQr } from '@/lib/PromptPayQr';
 import { terminalFor, useMe } from '@/lib/useMe';
 
 type Method = 'cash' | 'promptpay' | 'card' | 'transfer';
@@ -57,7 +58,7 @@ export default function PayPage() {
         payments: [method === 'cash' ? { method, tendered: got > 0 ? got : undefined } : { method }],
         buyer: docChoice === 'FULL' ? buyer : undefined,
       });
-      router.push(`/receipt/${r.document.id}?change=${r.change}`);
+      router.push(`/receipt/${r.document.id}?change=${r.change}&fresh=1`);
     } catch (e) {
       setErr(errText(e));
       setBusy(false);
@@ -78,7 +79,7 @@ export default function PayPage() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <header className="topbar">
         <Link href={`/pos/order/${id}`} className="btn"><BackIcon /> กลับไปแก้รายการ</Link>
-        <span style={{ fontSize: 20, fontWeight: 700 }}>ชำระเงิน · {view.order.table_name ? `โต๊ะ ${view.order.table_name}` : 'กลับบ้าน'}</span>
+        <span style={{ fontSize: 20, fontWeight: 700 }}>ชำระเงิน · {view.order.table_name ? `โต๊ะ ${view.order.table_name}` : view.parent ? `บิลแยกจากโต๊ะ ${view.parent.table_name}` : 'กลับบ้าน'}</span>
         <span className="spacer" />
         <span className="muted">บิล #{view.order.bill_no} · {terminal?.name}</span>
       </header>
@@ -146,7 +147,11 @@ export default function PayPage() {
             </>
           ) : (
             <div className="card" style={{ flex: 1, display: 'grid', placeItems: 'center', padding: 24, fontSize: 17, color: 'var(--muted)', textAlign: 'center' }}>
-              {method === 'promptpay' ? 'ให้ลูกค้าสแกน QR พร้อมเพย์ของร้าน ตรวจยอดเงินเข้าแล้วกดยืนยัน' : 'ทำรายการที่เครื่องรูดบัตร หรือตรวจสลิปโอน แล้วกดยืนยัน'}
+              {method === 'promptpay'
+                ? me.tenant.promptpay_id
+                  ? <PromptPayQr id={me.tenant.promptpay_id} amount={payable} />
+                  : 'ให้ลูกค้าสแกน QR พร้อมเพย์ของร้าน ตรวจยอดเงินเข้าแล้วกดยืนยัน (ใส่เลขพร้อมเพย์ในตั้งค่าร้าน เพื่อสร้าง QR ตามยอดบิลอัตโนมัติ)'
+                : 'ทำรายการที่เครื่องรูดบัตร หรือตรวจสลิปโอน แล้วกดยืนยัน'}
             </div>
           )}
         </section>

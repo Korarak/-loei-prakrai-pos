@@ -8,11 +8,15 @@ import { api, errText } from '@/lib/api';
 import { BackIcon, BowlIcon, tintFor } from '@/lib/ui';
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../TopBar';
+import { TableOps } from './TableOps';
 
 interface Item { id: string; category_id: string | null; name: string; price: number; active: boolean }
 interface Line { id: string; menu_item_id: string; name: string; unit_price: number; qty: number; note: string | null; status: 'new' | 'sent' | 'void'; void_reason: string | null }
 interface OrderView {
-  order: { id: string; bill_no: number; status: string; table_name: string | null; guests: number; channel: string; discount_type: string; discount_value: number };
+  order: { id: string; bill_no: number; status: string; table_id: string | null; table_name: string | null; guests: number; channel: string; discount_type: string; discount_value: number };
+  parent: { id: string; bill_no: number; table_name: string | null } | null;
+  splits: { id: string; bill_no: number; status: string; amount: number }[];
+  merged_into: string | null;
   lines: Line[];
   bill: { gross: number; discount: number; vatableBase: number; exemptBase: number; serviceCharge: number; vat: number; total: number };
   document: { id: string } | null;
@@ -24,12 +28,14 @@ export default function OrderPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { me } = useMe();
+  const canPay = !me || ['owner', 'manager', 'cashier'].includes(me.role);
   const [menu, setMenu] = useState<{ categories: { id: string; name: string }[]; items: Item[] } | null>(null);
   const [cat, setCat] = useState<string>('all');
   const [view, setView] = useState<OrderView | null>(null);
   const [err, setErr] = useState('');
   const [voiding, setVoiding] = useState<string | null>(null);
   const [reason, setReason] = useState('');
+  const [batch, setBatch] = useState<string | null>(null);
 
   const load = useCallback(() => api<OrderView>('GET', `/api/orders/${id}`).then(setView).catch((e) => setErr(errText(e))), [id]);
   useEffect(() => { load(); api('GET', '/api/menu').then(setMenu); }, [load]);
@@ -48,8 +54,10 @@ export default function OrderPage() {
   if (view && view.order.status !== 'open') {
     return (
       <main style={{ padding: 40, display: 'grid', gap: 16, justifyItems: 'start' }}>
-        <h1>บิล #{view.order.bill_no} ปิดแล้ว</h1>
+        <h1>บิล #{view.order.bill_no} {view.merged_into ? 'ถูกรวมเข้ากับบิลอื่นแล้ว' : 'ปิดแล้ว'}</h1>
+        {view.merged_into && <Link className="btn btn-primary btn-lg" href={`/pos/order/${view.merged_into}`}>ไปที่บิลที่รวมแล้ว</Link>}
         {view.document && <Link className="btn btn-primary btn-lg" href={`/receipt/${view.document.id}`}>ดูใบเสร็จ</Link>}
+        {view.parent && <Link className="btn btn-lg" href={`/pos/order/${view.parent.id}`}>กลับไปบิลหลักของโต๊ะ {view.parent.table_name}</Link>}
         <Link className="btn" href="/pos">กลับผังโต๊ะ</Link>
       </main>
     );
@@ -58,9 +66,12 @@ export default function OrderPage() {
   const items = (menu?.items ?? []).filter((i) => i.active && (cat === 'all' || i.category_id === cat));
   const live = view?.lines.filter((l) => l.status !== 'void') ?? [];
   const hasNew = live.some((l) => l.status === 'new');
+  const hasSent = live.some((l) => l.status === 'sent');
   const b = view?.bill;
   const vatIncluded = me?.tenant.vat_registered && me.tenant.price_includes_vat;
-  const title = view ? (view.order.table_name ? `โต๊ะ ${view.order.table_name}` : 'กลับบ้าน') : '';
+  const title = !view ? '' : view.order.table_name ? `โต๊ะ ${view.order.table_name}`
+    : view.parent ? `บิลแยกจากโต๊ะ ${view.parent.table_name ?? `#${view.parent.bill_no}`}` : 'กลับบ้าน';
+  const openSplits = view?.splits.filter((x) => x.status === 'open') ?? [];
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -106,6 +117,20 @@ export default function OrderPage() {
               <div className="muted" style={{ fontSize: 14 }}>บิล #{view?.order.bill_no} · {live.reduce((s, l) => s + l.qty, 0)} รายการ</div>
             </div>
           </div>
+          {view && live.length > 0 && (
+            <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--line-soft)' }}>
+              <TableOps orderId={id} tableId={view.order.table_id} lines={view.lines} onDone={load} />
+            </div>
+          )}
+          {openSplits.length > 0 && (
+            <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--line-soft)', display: 'grid', gap: 6 }}>
+              {openSplits.map((x) => (
+                <Link key={x.id} href={`/pos/order/${x.id}`} className="row" style={{ justifyContent: 'space-between', padding: '8px 12px', borderRadius: 10, background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontWeight: 600 }}>
+                  <span>บิลแยก #{x.bill_no} ยังไม่ชำระ</span><span>฿{formatBaht(x.amount)} ›</span>
+                </Link>
+              ))}
+            </div>
+          )}
 
           <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '4px 20px' }}>
             {live.length === 0 && <p className="muted" style={{ textAlign: 'center', padding: '48px 0' }}>แตะเมนูทางซ้ายเพื่อเพิ่มรายการ</p>}
@@ -172,10 +197,17 @@ export default function OrderPage() {
           )}
 
           {err && <div className="error" role="alert" style={{ margin: '8px 20px 0' }}>{err}</div>}
+          {(batch || hasSent) && (
+            <div className="row" style={{ padding: '10px 20px 0', gap: 8 }}>
+              {batch && <Link className="btn btn-outline" style={{ flex: 1 }} href={`/kitchen/${id}?at=${encodeURIComponent(batch)}`}>พิมพ์ใบสั่งครัวรอบนี้</Link>}
+              <Link className="btn" style={{ flex: batch ? undefined : 1 }} href={`/kitchen/${id}`}>พิมพ์ซ้ำทั้งโต๊ะ</Link>
+            </div>
+          )}
           <div className="row" style={{ padding: '12px 20px 20px', gap: 10 }}>
             <button className="btn btn-outline btn-lg" style={{ width: 132 }} disabled={!hasNew}
-              onClick={() => run(() => api('POST', `/api/orders/${id}/send`))}>ส่งครัว</button>
-            <button className="btn btn-primary btn-lg" style={{ flex: 1 }} disabled={live.length === 0}
+              onClick={() => run(async () => setBatch((await api('POST', `/api/orders/${id}/send`)).sentAt))}>ส่งครัว</button>
+            <button className="btn btn-primary btn-lg" style={{ flex: 1 }} disabled={live.length === 0 || !canPay}
+              title={canPay ? undefined : 'พนักงานเสิร์ฟรับชำระเงินไม่ได้ ให้แคชเชียร์รับ'}
               onClick={() => router.push(`/pos/order/${id}/pay`)}>ชำระเงิน</button>
           </div>
         </aside>

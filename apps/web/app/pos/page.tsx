@@ -1,13 +1,14 @@
 'use client';
 
 import { formatBaht } from '@prakai/core';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
-import { useMe } from '@/lib/useMe';
+import { terminalFor, useMe } from '@/lib/useMe';
 import { TopBar } from './TopBar';
 
-interface TableRow { id: string; name: string; seats: number; order_id: string | null; guests: number | null; opened_at: string | null; amount: number }
+interface TableRow { id: string; name: string; seats: number; order_id: string | null; guests: number | null; opened_at: string | null; amount: number; splits: number }
 
 function minutesSince(iso: string) {
   return Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
@@ -18,6 +19,13 @@ export default function Tables() {
   const { me } = useMe();
   const [tables, setTables] = useState<TableRow[] | null>(null);
   const [err, setErr] = useState('');
+  const [noShift, setNoShift] = useState(false);
+  const canCash = !!me && ['owner', 'manager', 'cashier'].includes(me.role);
+
+  useEffect(() => {
+    if (!me || !canCash) return;
+    api('GET', `/api/shifts/current?terminalId=${terminalFor(me).id}`).then((s) => setNoShift(s === null)).catch(() => {});
+  }, [me, canCash]);
 
   useEffect(() => {
     const load = () => api<TableRow[]>('GET', '/api/tables').then(setTables).catch((e) => setErr(errText(e)));
@@ -45,6 +53,13 @@ export default function Tables() {
           <span className="spacer" />
           <button className="btn btn-primary btn-lg" onClick={() => open(null)}>+ ออเดอร์กลับบ้าน</button>
         </div>
+        {noShift && (
+          <div className="error row" role="status">
+            <span>เครื่องนี้ยังไม่ได้เปิดกะ ต้องเปิดกะก่อนรับชำระเงิน</span>
+            <span className="spacer" />
+            <Link className="btn btn-warn" href="/pos/shift">เปิดกะ</Link>
+          </div>
+        )}
         {err && <div className="error" role="alert">{err}</div>}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14 }}>
           {tables?.map((t) => {
@@ -64,6 +79,7 @@ export default function Tables() {
                   {on ? `${t.guests} ท่าน · ${minutesSince(t.opened_at!)} นาที` : `${t.seats} ที่นั่ง`}
                 </span>
                 {on && <span style={{ fontSize: 22, fontWeight: 700 }}>฿{formatBaht(t.amount)}</span>}
+                {on && t.splits > 0 && <span className="muted" style={{ fontSize: 14 }}>+ บิลแยก {t.splits} ใบ</span>}
               </button>
             );
           })}

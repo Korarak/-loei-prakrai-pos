@@ -68,3 +68,19 @@ h1, .display { font-family: var(--font-display), var(--font-body), sans-serif; }
   body { background: #fff; }
   .no-print { display: none !important; }
 }
+
+/* Back-office tables */
+.tbl { width: 100%; border-collapse: collapse; font-size: 15px; }
+.tbl th { height: 34px; color: var(--muted); font-size: 13px; font-weight: 600; text-align: left; padding: 0 8px; }
+.tbl td { height: 46px; padding: 0 8px; border-top: 1px solid var(--line-soft); }
+.tbl .num { text-align: right; white-space: nowrap; }
+.tbl tr.total td { border-top: 2px solid var(--line); font-weight: 700; }
+.tbl tr.click { cursor: pointer; }
+.tbl tr.click:hover td { background: var(--line-soft); }
+.tbl-wrap { overflow-x: auto; }
+.field textarea { padding: 10px 14px; border-radius: 12px; border: 1px solid #c9cfc7; font-size: 16px; color: var(--ink); }
+.grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+
+.btn[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+@media (max-width: 820px) { .shift-grid { grid-template-columns: 1fr !important; } }
+@media print { .shift-grid { grid-template-columns: 1fr !important; } .ticket { break-after: page; } }
