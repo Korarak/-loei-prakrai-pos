@@ -2,6 +2,10 @@ import pg from 'pg';
 
 // bigint (int8) columns hold satang; well inside Number.MAX_SAFE_INTEGER.
 pg.types.setTypeParser(20, (v) => Number(v));
+// numeric(14,4) holds stock quantities in g/ml/pc; 4 decimals fit a double exactly enough.
+pg.types.setTypeParser(1700, (v) => Number(v));
+// date columns stay 'YYYY-MM-DD': a JS Date would shift Thai calendar days across the UTC boundary.
+pg.types.setTypeParser(1082, (v) => v);
 
 export type Db = pg.Pool;
 export type Tx = pg.PoolClient;

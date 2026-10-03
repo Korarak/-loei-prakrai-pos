@@ -2,11 +2,15 @@ import cookie from '@fastify/cookie';
 import Fastify from 'fastify';
 import { ZodError } from 'zod';
 import { guard, HttpError, makeTokens, type Role } from './auth.ts';
-import type { Db } from './db.ts';
+import { one, withPlatform, type Db } from './db.ts';
 import { authRoutes } from './routes/auth.ts';
+import { costingRoutes } from './routes/costing.ts';
 import { orderRoutes } from './routes/orders.ts';
+import { printerRoutes } from './routes/printers.ts';
 import { reportRoutes } from './routes/reports.ts';
+import { shiftRoutes } from './routes/shifts.ts';
 import { shopRoutes } from './routes/shop.ts';
+import { staffRoutes } from './routes/staff.ts';
 
 export interface AppDeps {
   db: Db;
@@ -23,7 +27,11 @@ export type Ctx = AppDeps & {
 export function buildApp(deps: AppDeps) {
   const app = Fastify({ logger: deps.logger ?? false });
   const tokens = makeTokens(deps.jwtSecret);
-  const ctx: Ctx = { ...deps, tokens, auth: (roles) => guard(tokens, roles) };
+  const member = (s: { userId: string; tenantId: string }) => withPlatform(deps.db, async (c) =>
+    (await one<{ role: Role }>(c,
+      `SELECT m.role FROM tenant_members m JOIN tenants t ON t.id = m.tenant_id
+        WHERE m.tenant_id = $1 AND m.user_id = $2 AND m.active AND t.status <> 'closed'`, [s.tenantId, s.userId]))?.role ?? null);
+  const ctx: Ctx = { ...deps, tokens, auth: (roles) => guard(tokens, member, roles) };
 
   app.register(cookie);
 
@@ -32,6 +40,9 @@ export function buildApp(deps: AppDeps) {
     if (err instanceof ZodError) return reply.status(400).send({ error: 'invalid_input', issues: err.issues });
     const pgCode = (err as { code?: string }).code;
     if (pgCode === '23505') return reply.status(409).send({ error: 'conflict' });
+    // Fastify's own request errors (bad JSON, body too large…) are the client's fault, not ours.
+    const status = (err as { statusCode?: number }).statusCode;
+    if (status && status >= 400 && status < 500) return reply.status(status).send({ error: 'invalid_input', message: (err as Error).message });
     app.log.error(err);
     return reply.status(500).send({ error: 'internal' });
   });
@@ -41,5 +52,9 @@ export function buildApp(deps: AppDeps) {
   app.register(async (a) => shopRoutes(a, ctx));
   app.register(async (a) => orderRoutes(a, ctx));
   app.register(async (a) => reportRoutes(a, ctx));
+  app.register(async (a) => costingRoutes(a, ctx));
+  app.register(async (a) => staffRoutes(a, ctx));
+  app.register(async (a) => shiftRoutes(a, ctx));
+  app.register(async (a) => printerRoutes(a, ctx));
   return app;
 }

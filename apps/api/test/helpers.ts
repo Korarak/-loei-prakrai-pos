@@ -14,7 +14,7 @@ type App = ReturnType<typeof makeApp>['app'];
 let n = 0;
 
 /** Sign up a fresh shop and return a request helper bound to its owner. */
-export async function newShop(app: App, opts: { vat?: boolean; posId?: string | null; sc?: number } = {}) {
+export async function newShop(app: App, opts: { vat?: boolean; posId?: string | null; sc?: number; shift?: boolean } = {}) {
   n++;
   const email = `owner${n}-${Date.now()}@test.local`;
   const res = await app.inject({ method: 'POST', url: '/api/auth/signup', payload: {
@@ -33,6 +33,8 @@ export async function newShop(app: App, opts: { vat?: boolean; posId?: string | 
   const me = (await call('GET', '/api/me')).body;
   const terminalId: string = me.terminals[0].id;
   if (opts.posId !== null) await call('PATCH', `/api/terminals/${terminalId}`, { rdPosId: opts.posId ?? 'E0123456789' });
+  // Payments need an open shift on the till.
+  if (opts.shift !== false) await call('POST', '/api/shifts', { terminalId, openingFloat: 100000 });
   const menu = (await call('GET', '/api/menu')).body;
   const item = (name: string) => menu.items.find((i: any) => i.name === name).id as string;
   const tables = (await call('GET', '/api/tables')).body;
