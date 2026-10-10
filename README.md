@@ -50,6 +50,8 @@
 
 ```bash
 docker compose -f docker-compose.dev.yml up -d   # PostgreSQL ที่ 127.0.0.1:5433
+# หรือรันครบทั้งชุด (db + API + เว็บ) จาก source: http://localhost:3100
+docker compose -f docker-compose.full.yml up -d --build
 cp apps/api/.env.example apps/api/.env           # แล้วเปลี่ยน JWT_SECRET
 npm install
 npm run migrate -w @prakai/api

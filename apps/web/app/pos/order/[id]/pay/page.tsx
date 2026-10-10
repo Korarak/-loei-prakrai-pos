@@ -76,7 +76,7 @@ export default function PayPage() {
   });
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <header className="topbar">
         <Link href={`/pos/order/${id}`} className="btn"><BackIcon /> กลับไปแก้รายการ</Link>
         <span style={{ fontSize: 20, fontWeight: 700 }}>ชำระเงิน · {view.order.table_name ? `โต๊ะ ${view.order.table_name}` : view.parent ? `บิลแยกจากโต๊ะ ${view.parent.table_name}` : 'กลับบ้าน'}</span>
@@ -84,8 +84,8 @@ export default function PayPage() {
         <span className="muted">บิล #{view.order.bill_no} · {terminal?.name}</span>
       </header>
 
-      <div style={{ flex: 1, display: 'flex', gap: 16, padding: '20px 24px', flexWrap: 'wrap' }}>
-        <section aria-label="สรุปบิล" className="card" style={{ width: 340, padding: '18px 20px', display: 'flex', flexDirection: 'column' }}>
+      <div className="pay-body">
+        <section aria-label="สรุปบิล" className="card pay-summary">
           <div style={{ fontSize: 18, fontWeight: 700, paddingBottom: 8 }}>สรุปบิล</div>
           {view.lines.filter((l: any) => l.status !== 'void').map((l: any) => (
             <div key={l.id} className="row" style={{ padding: '10px 0', borderBottom: '1px solid var(--line-soft)', gap: 10 }}>
@@ -105,7 +105,7 @@ export default function PayPage() {
           </div>
         </section>
 
-        <section aria-label="รับชำระ" style={{ flex: 1, minWidth: 420, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <section aria-label="รับชำระ" className="pay-main">
           <div className="card row" style={{ padding: '14px 22px', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <span className="muted" style={{ fontSize: 18, fontWeight: 600 }}>ยอดชำระ</span>
             <span style={{ fontSize: 56, fontWeight: 700 }}>฿{formatBaht(payable)}</span>
@@ -156,7 +156,7 @@ export default function PayPage() {
           )}
         </section>
 
-        <section aria-label="เอกสาร" style={{ width: 320, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <section aria-label="เอกสาร" className="pay-doc">
           <div style={{ fontSize: 18, fontWeight: 700 }}>เอกสารที่ออก</div>
           {docOptions.map(([d, label, sub, enabled]) => (
             <button key={d} disabled={!enabled} aria-pressed={docChoice === d} onClick={() => setDoc(d)} style={choiceStyle(docChoice === d, enabled)}>

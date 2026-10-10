@@ -10,6 +10,8 @@ const need = (k: string) => {
 const app = buildApp({
   db: createPool(need('DATABASE_URL')),
   jwtSecret: need('JWT_SECRET'),
+  platformAdmins: (process.env.PLATFORM_ADMIN_EMAILS ?? '').split(',').map((e) => e.trim()).filter(Boolean),
+  uploadDir: process.env.UPLOAD_DIR ?? './uploads',
   secureCookies: process.env.NODE_ENV === 'production',
   logger: true,
 });

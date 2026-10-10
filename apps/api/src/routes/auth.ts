@@ -7,6 +7,7 @@ import { audit, many, one, withPlatform, withTenant } from '../db.ts';
 import { checkTotp, hashRecovery, newRecoveryCodes, newTotpSecret, otpauthUri } from '../totp.ts';
 import { seedCosting, seedTemplate } from '../template.ts';
 import { deviceOf } from '../device.ts';
+import { isPlatformAdmin } from './platform.ts';
 
 const Signup = z.object({
   name: z.string().trim().min(1).max(100),
@@ -50,7 +51,7 @@ export async function authRoutes(app: FastifyInstance, ctx: Ctx) {
       const exists = await one(c, `SELECT 1 FROM users WHERE email = $1`, [b.email]);
       if (exists) throw new HttpError(409, 'email_taken');
       const u = await one<{ id: string }>(c,
-        `INSERT INTO users (email, phone, name, password_hash) VALUES ($1, $2, $3, $4) RETURNING id`,
+        `INSERT INTO users (email, phone, name, password_hash, last_login_at) VALUES ($1, $2, $3, $4, now()) RETURNING id`,
         [b.email, b.phone ?? null, b.name, passwordHash]);
       const t = await one<{ id: string }>(c,
         `INSERT INTO tenants (name, slug, trial_ends_at) VALUES ($1, $2, $3) RETURNING id`,
@@ -186,12 +187,13 @@ export async function authRoutes(app: FastifyInstance, ctx: Ctx) {
   /** Session for the shop this person belongs to (owner role first); resets the failed-login count. */
   async function signedIn(userId: string): Promise<Session> {
     const m = await withPlatform(ctx.db, async (c) => {
-      await c.query(`UPDATE users SET login_failed = 0, login_locked_until = NULL WHERE id = $1`, [userId]);
-      return many<{ tenant_id: string; role: Session['role'] }>(c,
-        `SELECT m.tenant_id, m.role FROM tenant_members m JOIN tenants t ON t.id = m.tenant_id
-          WHERE m.user_id = $1 AND m.active AND t.status <> 'closed' ORDER BY m.role = 'owner' DESC`, [userId]);
+      await c.query(`UPDATE users SET login_failed = 0, login_locked_until = NULL, last_login_at = now() WHERE id = $1`, [userId]);
+      return many<{ tenant_id: string; role: Session['role']; status: string }>(c,
+        `SELECT m.tenant_id, m.role, t.status FROM tenant_members m JOIN tenants t ON t.id = m.tenant_id
+          WHERE m.user_id = $1 AND m.active AND t.status <> 'closed' ORDER BY (t.status = 'suspended'), m.role = 'owner' DESC`, [userId]);
     });
     if (!m[0]) throw new HttpError(401, 'invalid_credentials');
+    if (m[0].status === 'suspended') throw new HttpError(403, 'shop_suspended');
     return { userId, tenantId: m[0].tenant_id, role: m[0].role };
   }
 
@@ -214,6 +216,6 @@ export async function authRoutes(app: FastifyInstance, ctx: Ctx) {
     const d = await deviceOf(ctx.db, req);
     // The device's till decides which terminal numbers tax documents; only when it belongs to this shop.
     const device = d && d.tenant_id === s.tenantId ? { id: d.id, name: d.name, terminal_id: d.terminal_id } : null;
-    return { user, tenant, role: s.role, branches, terminals, device };
+    return { user, tenant, role: s.role, branches, terminals, device, platformAdmin: await isPlatformAdmin(ctx, s.userId) };
   });
 }

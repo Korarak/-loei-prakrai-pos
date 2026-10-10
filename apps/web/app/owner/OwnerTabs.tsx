@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-export type OwnerTab = 'profit' | 'menu' | 'stock' | 'expenses' | 'reports' | 'staff' | 'settings';
+export type OwnerTab = 'profit' | 'menu' | 'stock' | 'expenses' | 'reports' | 'staff' | 'audit' | 'settings';
 
 const TABS: Array<[OwnerTab, string, string]> = [
   ['profit', '/owner/profit', 'กำไร–ต้นทุน'],
@@ -9,6 +9,7 @@ const TABS: Array<[OwnerTab, string, string]> = [
   ['expenses', '/owner/expenses', 'ค่าใช้จ่าย'],
   ['reports', '/owner/reports', 'รายงานภาษี'],
   ['staff', '/owner/staff', 'พนักงานและเครื่อง'],
+  ['audit', '/owner/audit', 'ประวัติการใช้งาน'],
   ['settings', '/owner/settings', 'ตั้งค่าร้านและภาษี'],
 ];
 

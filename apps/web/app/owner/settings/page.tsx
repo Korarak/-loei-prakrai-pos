@@ -62,7 +62,7 @@ export default function Settings() {
   return (
     <>
       <TopBar me={me} active="owner" />
-      <main style={{ padding: '20px 24px', display: 'grid', gap: 16, maxWidth: 1100 }}>
+      <main style={{ padding: '20px 24px', display: 'grid', gap: 16 }}>
         <OwnerTabs active="settings" />
         {!owner && <div className="error">เฉพาะเจ้าของร้านแก้ค่าภาษีได้</div>}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 16 }}>

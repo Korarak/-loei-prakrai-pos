@@ -2,8 +2,9 @@
 
 import { formatBaht, pct, valueOf } from '@prakai/core';
 import { useEffect, useMemo, useState } from 'react';
-import { api, errText } from '@/lib/api';
+import { api, errText, uploadMenuImage } from '@/lib/api';
 import { fmtQty, Sheet, Stat, toSatang, UNIT } from '@/lib/owner';
+import { BowlIcon, tintFor } from '@/lib/ui';
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
@@ -97,6 +98,8 @@ function RecipeSheet({ item, ings, cats, onClose, onSaved }: { item: any; ings: 
   const [categoryId, setCategoryId] = useState<string>(item.category_id ?? '');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [image, setImage] = useState<string | null>(item.image_url ?? null);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const byId = useMemo(() => new Map(ings.map((i) => [i.id, i])), [ings]);
 
   useEffect(() => {
@@ -123,8 +126,32 @@ function RecipeSheet({ item, ings, cats, onClose, onSaved }: { item: any; ings: 
     } catch (e) { setErr(errText(e)); setBusy(false); }
   }
 
+  async function photo(file: File | undefined) {
+    if (!file) return;
+    setPhotoBusy(true); setErr('');
+    try { setImage((await uploadMenuImage(item.id, file)).image_url); }
+    catch (e) { setErr(errText(e)); }
+    setPhotoBusy(false);
+  }
+  async function removePhoto() {
+    setPhotoBusy(true); setErr('');
+    try { await api('DELETE', `/api/menu/items/${item.id}/image`); setImage(null); }
+    catch (e) { setErr(errText(e)); }
+    setPhotoBusy(false);
+  }
+
   return (
     <Sheet title={`สูตร · ${item.name}`} onClose={onClose} wide>
+      <div className="row" style={{ gap: 14 }}>
+        <div style={{ width: 96, height: 96, borderRadius: 12, background: tintFor(item.id), overflow: 'hidden', display: 'grid', placeItems: 'center', flex: 'none' }}>
+          {image ? <img src={image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <BowlIcon />}
+        </div>
+        <label className="btn btn-outline" style={{ cursor: 'pointer' }}>
+          {photoBusy ? 'กำลังอัปโหลด…' : image ? 'เปลี่ยนรูป' : 'เพิ่มรูปเมนู'}
+          <input type="file" accept="image/*" hidden disabled={photoBusy} onChange={(e) => { photo(e.target.files?.[0]); e.target.value = ''; }} />
+        </label>
+        {image && <button className="btn" disabled={photoBusy} onClick={removePhoto}>ลบรูป</button>}
+      </div>
       <div className="grid-form">
         <label className="field">ราคาขาย (บาท)<input inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} /></label>
         <label className="field">หมวด

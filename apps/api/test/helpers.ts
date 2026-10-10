@@ -1,3 +1,6 @@
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { buildApp } from '../src/app.ts';
 import { createPool } from '../src/db.ts';
 
@@ -6,7 +9,7 @@ export const ADMIN_URL = 'postgres://postgres:devpass@127.0.0.1:5433/prakai_test
 
 export function makeApp() {
   const db = createPool(APP_URL);
-  const app = buildApp({ db, jwtSecret: 'test-secret-test-secret-test-secret' });
+  const app = buildApp({ db, jwtSecret: 'test-secret-test-secret-test-secret', uploadDir: mkdtempSync(join(tmpdir(), 'prakai-up-')) });
   return { app, db };
 }
 
@@ -38,7 +41,7 @@ export async function newShop(app: App, opts: { vat?: boolean; posId?: string | 
   const menu = (await call('GET', '/api/menu')).body;
   const item = (name: string) => menu.items.find((i: any) => i.name === name).id as string;
   const tables = (await call('GET', '/api/tables')).body;
-  return { call, tenantId, terminalId, item, tables, email };
+  return { call, tenantId, terminalId, item, tables, email, token };
 }
 
 /** Open an order and add the table-5 example (2 fried rice, 1 tom yum, 1 som tam, 2 Thai tea = 360.00). */

@@ -10,7 +10,7 @@ import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../TopBar';
 import { TableOps } from './TableOps';
 
-interface Item { id: string; category_id: string | null; name: string; price: number; active: boolean }
+interface Item { id: string; category_id: string | null; name: string; price: number; active: boolean; image_url: string | null }
 interface Line { id: string; menu_item_id: string; name: string; unit_price: number; qty: number; note: string | null; status: 'new' | 'sent' | 'void'; void_reason: string | null }
 interface OrderView {
   order: { id: string; bill_no: number; status: string; table_id: string | null; table_name: string | null; guests: number; channel: string; discount_type: string; discount_value: number };
@@ -74,12 +74,12 @@ export default function OrderPage() {
   const openSplits = view?.splits.filter((x) => x.status === 'open') ?? [];
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="order-shell">
       <TopBar me={me}>
         <Link href="/pos" className="btn"><BackIcon /> {title}{view?.order.table_name ? ` · ${view.order.guests} ท่าน` : ''}</Link>
       </TopBar>
-      <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-        <main style={{ flex: 1, minWidth: 0, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16, overflow: 'auto' }}>
+      <div className="order-body">
+        <main className="order-menu">
           <nav aria-label="หมวดเมนู" style={{ display: 'flex', gap: 10, overflowX: 'auto', flexShrink: 0 }}>
             {[{ id: 'all', name: 'ทั้งหมด' }, ...(menu?.categories ?? [])].map((c) => (
               <button key={c.id} onClick={() => setCat(c.id)} aria-pressed={cat === c.id}
@@ -90,14 +90,14 @@ export default function OrderPage() {
               </button>
             ))}
           </nav>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(168px, 1fr))', gap: 12 }}>
             {items.map((i) => {
               const q = qtyByItem.get(i.id) ?? 0;
               return (
                 <button key={i.id} aria-label={`เพิ่ม ${i.name}`} onClick={() => run(() => api('POST', `/api/orders/${id}/lines`, { menuItemId: i.id }))}
                   style={{ display: 'flex', flexDirection: 'column', padding: 0, textAlign: 'left', background: '#fff', border: '1px solid var(--line)', borderRadius: 16, overflow: 'hidden' }}>
                   <div style={{ position: 'relative', width: '100%', height: 104, background: tintFor(i.id), display: 'grid', placeItems: 'center' }}>
-                    <BowlIcon />
+                    {i.image_url ? <img src={i.image_url} alt="" loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} /> : <BowlIcon />}
                     {q > 0 && <span style={{ position: 'absolute', top: 8, right: 8, minWidth: 34, height: 34, padding: '0 8px', borderRadius: 17, background: 'var(--accent)', color: '#fff', fontSize: 17, fontWeight: 700, display: 'grid', placeItems: 'center' }}>{q}</span>}
                   </div>
                   <div style={{ padding: '10px 14px 12px', width: '100%' }}>
@@ -110,7 +110,7 @@ export default function OrderPage() {
           </div>
         </main>
 
-        <aside style={{ width: 400, flexShrink: 0, display: 'flex', flexDirection: 'column', background: '#fff', borderLeft: '1px solid var(--line)' }}>
+        <aside className="order-aside">
           <div className="row" style={{ padding: '18px 20px 14px', borderBottom: '1px solid var(--line-soft)' }}>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 20, fontWeight: 700 }}>รายการสั่ง</div>
@@ -132,7 +132,7 @@ export default function OrderPage() {
             </div>
           )}
 
-          <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '4px 20px' }}>
+          <div className="order-lines" style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '4px 20px' }}>
             {live.length === 0 && <p className="muted" style={{ textAlign: 'center', padding: '48px 0' }}>แตะเมนูทางซ้ายเพื่อเพิ่มรายการ</p>}
             {live.map((l) => (
               <div key={l.id} style={{ padding: '12px 0', borderBottom: '1px solid var(--line-soft)' }}>
@@ -203,7 +203,7 @@ export default function OrderPage() {
               <Link className="btn" style={{ flex: batch ? undefined : 1 }} href={`/kitchen/${id}`}>พิมพ์ซ้ำทั้งโต๊ะ</Link>
             </div>
           )}
-          <div className="row" style={{ padding: '12px 20px 20px', gap: 10 }}>
+          <div className="row order-actions" style={{ gap: 10 }}>
             <button className="btn btn-outline btn-lg" style={{ width: 132 }} disabled={!hasNew}
               onClick={() => run(async () => setBatch((await api('POST', `/api/orders/${id}/send`)).sentAt))}>ส่งครัว</button>
             <button className="btn btn-primary btn-lg" style={{ flex: 1 }} disabled={live.length === 0 || !canPay}

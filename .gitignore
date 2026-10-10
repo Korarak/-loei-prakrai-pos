@@ -6,6 +6,7 @@ vps-handoff-pos.local.md
 !.env.example
 
 node_modules/
+uploads/
 dist/
 .next/
 coverage/

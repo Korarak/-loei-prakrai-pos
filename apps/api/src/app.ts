@@ -5,17 +5,24 @@ import { guard, HttpError, makeTokens, type Role } from './auth.ts';
 import { one, withPlatform, type Db } from './db.ts';
 import { authRoutes } from './routes/auth.ts';
 import { costingRoutes } from './routes/costing.ts';
+import { auditRoutes } from './routes/audit.ts';
 import { orderRoutes } from './routes/orders.ts';
+import { platformRoutes } from './routes/platform.ts';
 import { printerRoutes } from './routes/printers.ts';
 import { reportRoutes } from './routes/reports.ts';
 import { shiftRoutes } from './routes/shifts.ts';
 import { shopRoutes } from './routes/shop.ts';
 import { staffRoutes } from './routes/staff.ts';
+import { uploadRoutes } from './routes/uploads.ts';
 
 export interface AppDeps {
   db: Db;
   jwtSecret: string;
   secureCookies?: boolean;
+  /** Where menu photos live on disk; in Docker this is a named volume so photos survive redeploys. */
+  uploadDir?: string;
+  /** Emails allowed to use /api/platform/* (the operator who reviews sign-ups). Empty = nobody. */
+  platformAdmins?: string[];
   logger?: boolean;
 }
 
@@ -30,7 +37,7 @@ export function buildApp(deps: AppDeps) {
   const member = (s: { userId: string; tenantId: string }) => withPlatform(deps.db, async (c) =>
     (await one<{ role: Role }>(c,
       `SELECT m.role FROM tenant_members m JOIN tenants t ON t.id = m.tenant_id
-        WHERE m.tenant_id = $1 AND m.user_id = $2 AND m.active AND t.status <> 'closed'`, [s.tenantId, s.userId]))?.role ?? null);
+        WHERE m.tenant_id = $1 AND m.user_id = $2 AND m.active AND t.status NOT IN ('closed', 'suspended')`, [s.tenantId, s.userId]))?.role ?? null);
   const ctx: Ctx = { ...deps, tokens, auth: (roles) => guard(tokens, member, roles) };
 
   app.register(cookie);
@@ -56,5 +63,8 @@ export function buildApp(deps: AppDeps) {
   app.register(async (a) => staffRoutes(a, ctx));
   app.register(async (a) => shiftRoutes(a, ctx));
   app.register(async (a) => printerRoutes(a, ctx));
+  app.register(async (a) => uploadRoutes(a, ctx));
+  app.register(async (a) => auditRoutes(a, ctx));
+  app.register(async (a) => platformRoutes(a, ctx));
   return app;
 }

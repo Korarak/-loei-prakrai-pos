@@ -1,0 +1,42 @@
+# Full local stack (db + API + web) built from source, same images as production.
+#   docker compose -f docker-compose.full.yml up -d --build   -> http://localhost:3100
+# Production compose lives in deploy/. Dev-only database: docker-compose.dev.yml.
+name: prakai-full
+services:
+  pos-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: devpass
+      POSTGRES_DB: prakai
+    volumes: [full_db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "prakai"]
+      interval: 3s
+      retries: 20
+
+  pos-backend:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    depends_on:
+      pos-db: { condition: service_healthy }
+    environment:
+      DATABASE_ADMIN_URL: postgres://postgres:devpass@pos-db:5432/prakai
+      DATABASE_URL: postgres://prakai_app:apppass@pos-db:5432/prakai
+      APP_DB_PASSWORD: apppass
+      JWT_SECRET: local-dev-secret-change-me-0123456789abcdef
+      UPLOAD_DIR: /data/uploads
+      PLATFORM_ADMIN_EMAILS: ${PLATFORM_ADMIN_EMAILS:-test@example.test}
+    volumes: [full_uploads:/data/uploads]
+
+  pos-frontend:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args: { API_ORIGIN: "http://pos-backend:4000" }
+    depends_on:
+      pos-backend: { condition: service_healthy }
+    ports: ["127.0.0.1:${WEB_PORT:-3100}:3000"]
+
+volumes:
+  full_db:
+  full_uploads:

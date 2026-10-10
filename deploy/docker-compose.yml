@@ -44,6 +44,10 @@ services:
       DATABASE_URL: postgres://prakai_app:${APP_DB_PASSWORD:?APP_DB_PASSWORD is required}@pos-db:5432/prakai
       APP_DB_PASSWORD: ${APP_DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      UPLOAD_DIR: /data/uploads
+      PLATFORM_ADMIN_EMAILS: ${PLATFORM_ADMIN_EMAILS:-}   # operator emails allowed to review sign-ups at /platform
+    volumes:
+      - pos_uploads:/data/uploads       # menu photos; survive redeploys
     networks: [internal]              # reached only by pos-frontend, never by the proxy
     labels: { project: pos }
     logging: *default-logging
@@ -78,7 +82,8 @@ services:
       PGDATABASE: prakai
     volumes:
       - ./backups:/backups
-    command: ["sh", "-c", "while true; do f=/backups/prakai-$$(date +%F).dump; pg_dump -Fc -f $$f.tmp && mv $$f.tmp $$f; find /backups -name 'prakai-*.dump' -mtime +14 -delete; sleep 86400; done"]
+      - pos_uploads:/data/uploads:ro
+    command: ["sh", "-c", "while true; do f=/backups/prakai-$$(date +%F).dump; pg_dump -Fc -f $$f.tmp && mv $$f.tmp $$f; u=/backups/uploads-$$(date +%F).tar.gz; tar -czf $$u.tmp -C /data uploads && mv $$u.tmp $$u; find /backups -type f -mtime +14 -delete; sleep 86400; done"]
     networks: [internal]
     labels: { project: pos }
     logging: *default-logging
@@ -94,3 +99,4 @@ networks:
 
 volumes:
   pos_db_data:
+  pos_uploads:

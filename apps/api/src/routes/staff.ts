@@ -160,7 +160,7 @@ export async function staffRoutes(app: FastifyInstance, ctx: Ctx) {
       `SELECT m.role, m.pin_hash, m.pin_failed, coalesce(m.pin_locked_until > now(), false) AS locked,
               greatest(0, extract(epoch FROM m.pin_locked_until - now()))::int AS wait_s
          FROM tenant_members m JOIN tenants t ON t.id = m.tenant_id
-        WHERE m.tenant_id = $1 AND m.user_id = $2 AND m.active AND t.status <> 'closed'`, [d.tenant_id, b.userId]));
+        WHERE m.tenant_id = $1 AND m.user_id = $2 AND m.active AND t.status NOT IN ('closed', 'suspended')`, [d.tenant_id, b.userId]));
     if (!m?.pin_hash) throw new HttpError(401, 'invalid_pin');
     if (m.locked) throw new HttpError(423, 'pin_locked', `try again in ${Math.ceil(m.wait_s / 60)} min`);
 

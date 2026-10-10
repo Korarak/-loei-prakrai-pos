@@ -11,6 +11,7 @@ const MESSAGES: Record<string, string> = {
   invalid_credentials: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
   email_taken: 'อีเมลนี้สมัครแล้ว ลองเข้าสู่ระบบ',
   unauthenticated: 'กรุณาเข้าสู่ระบบ',
+  shop_suspended: 'ร้านนี้ถูกระงับการใช้งานชั่วคราว ติดต่อผู้ดูแลระบบ',
   forbidden: 'บัญชีนี้ไม่มีสิทธิ์ทำรายการนี้',
   manager_required: 'ต้องให้ผู้จัดการอนุมัติ',
   table_busy: 'โต๊ะนี้มีบิลเปิดอยู่',
@@ -55,6 +56,7 @@ const MESSAGES: Record<string, string> = {
   totp_already_enabled: 'เปิดใช้แอปยืนยันตัวตนอยู่แล้ว',
   totp_not_enabled: 'ยังไม่ได้เปิดใช้แอปยืนยันตัวตน',
   no_password: 'พนักงานที่เข้าด้วย PIN ไม่ต้องใช้แอปยืนยันตัวตน',
+  invalid_image: 'ไฟล์ต้องเป็นรูป JPEG, PNG หรือ WebP',
   printer_not_found: 'ไม่พบเครื่องพิมพ์นี้ หรือถูกปิดใช้',
 };
 
@@ -87,3 +89,22 @@ export async function api<T = any>(method: string, url: string, body?: unknown):
 }
 
 export const errText = (e: unknown) => (e instanceof ApiError ? e.message : 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้');
+
+/** Shrink a photo in the browser (longest side 800px, JPEG) so uploads stay small and fast on shop Wi-Fi. */
+async function shrink(file: File): Promise<Blob> {
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1, 800 / Math.max(bmp.width, bmp.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bmp.width * scale);
+  canvas.height = Math.round(bmp.height * scale);
+  canvas.getContext('2d')!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  return new Promise((ok, no) => canvas.toBlob((b) => (b ? ok(b) : no(new Error('encode'))), 'image/jpeg', 0.85));
+}
+
+export async function uploadMenuImage(itemId: string, file: File): Promise<{ id: string; image_url: string }> {
+  const blob = await shrink(file).catch(() => { throw new ApiError(415, 'invalid_image', MESSAGES.invalid_image!); });
+  const res = await fetch(`/api/menu/items/${itemId}/image`, { method: 'POST', headers: { 'content-type': 'image/jpeg' }, body: blob, credentials: 'same-origin' });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new ApiError(res.status, data?.error ?? 'error', MESSAGES[data?.error] ?? data?.message ?? 'อัปโหลดรูปไม่สำเร็จ');
+  return data;
+}

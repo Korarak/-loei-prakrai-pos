@@ -15,6 +15,8 @@ export interface Me {
   terminals: { id: string; name: string; code: string; rd_pos_id: string | null; serial_no: string | null }[];
   /** Set when this browser is a till the owner registered for PIN sign-in. */
   device: { id: string; name: string; terminal_id: string | null } | null;
+  /** The operator of the whole service: may review sign-ups at /platform. */
+  platformAdmin?: boolean;
 }
 
 export function useMe() {

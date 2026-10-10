@@ -207,7 +207,7 @@ export async function costingRoutes(app: FastifyInstance, ctx: Ctx) {
   app.get('/api/costing/menu', { preHandler: manager }, async (req) => tx(req.session, async (c) => {
     const shop = await vatShop(c, req.session);
     const rate = await rateOn(c, bangkokDate());
-    const items = await many(c, `SELECT i.id, i.name, i.price, i.vat_exempt, i.active, i.category_id, k.name AS category
+    const items = await many(c, `SELECT i.id, i.name, i.price, i.vat_exempt, i.active, i.category_id, i.image_url, k.name AS category
                                    FROM menu_items i LEFT JOIN menu_categories k ON k.id = i.category_id
                                   ORDER BY k.sort NULLS LAST, i.sort, i.name`);
     const lines = await many(c, `SELECT menu_item_id, ingredient_id, qty FROM recipe_lines`);

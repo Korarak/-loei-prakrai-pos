@@ -7,6 +7,7 @@
 - มีแค่ `pos-frontend` ที่เข้า network `loei-banrakrod_default` ของ Nginx Proxy Manager
   API อยู่ใน network ภายในเท่านั้น หน้าเว็บ proxy `/api/*` ไปหา `pos-backend:4000` เอง
 - API รัน migration ทุกครั้งที่ container เริ่ม แล้วจึงเปิดรับ request
+- รูปเมนูเก็บใน volume `pos_uploads` (mount ที่ `/data/uploads` ของ `pos-backend`) อยู่รอดหลัง redeploy · `pos-backup` เก็บ `uploads-YYYY-MM-DD.tar.gz` คู่กับ dump ด้วย
 - `pos-backup` ทำ `pg_dump` วันละครั้ง เก็บ 14 วันใน `/home/deploy/pos/backups` (ยังอยู่เครื่องเดียวกัน ต้องคัดลอกออกนอกเครื่องเอง)
 
 ## ครั้งแรก
@@ -19,6 +20,7 @@
    POS_DB_PASSWORD=<openssl rand -hex 24>
    APP_DB_PASSWORD=<openssl rand -hex 24>
    JWT_SECRET=<openssl rand -hex 48>
+   PLATFORM_ADMIN_EMAILS=<your email, comma separated; empty = nobody can open /platform>
    ```
 
    ใช้ค่า hex เท่านั้น (อยู่ใน URL ของฐานข้อมูล อักขระพิเศษจะทำให้ต่อไม่ติด)
