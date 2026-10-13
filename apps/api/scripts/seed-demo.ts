@@ -47,7 +47,7 @@ function taxId(prefix: string): string {
 
 async function main() {
   // ---------- shop ----------
-  if (arg('signup') !== undefined) {
+  if (process.argv.includes('--signup')) {
     const r = await call('POST', '/api/auth/signup', {
       name: 'เจ้าของร้านตัวอย่าง', email, password, shopName: 'สเต็กเฮาส์ ครัวประกาย (ร้านตัวอย่าง)', tableCount: 12, template: 'steak',
     });
