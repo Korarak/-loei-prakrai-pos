@@ -7,7 +7,7 @@
 - [x] ไม่มีความลับใน commit (`.env.example` มีแต่ placeholder, `*.local.md` ถูก ignore)
 - [x] typecheck ผ่านทั้ง core / api / web
 - [x] core test ผ่าน 24/24
-- [ ] API test — ยังไม่ได้รันในเครื่อง (ต้องมี Postgres พอร์ต 5433) · CI จะรันให้ก่อน build
+- [x] API test ผ่าน 115/115 ในเครื่อง (รวมตัวเลือกเมนูและสมุดลูกค้า) · CI จะรันซ้ำก่อน build
 
 ## ก่อน push
 - [ ] ตั้ง GitHub secrets: `SERVER_SSH_HOST` `SERVER_SSH_PORT` `SERVER_SSH_USERNAME` `SERVER_SSH_KEY`

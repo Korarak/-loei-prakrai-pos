@@ -34,7 +34,7 @@ services:
       start_period: 20s
 
   pos-backend:
-    image: ${REGISTRY_URL:-registry.banrukrot.com}/pos-backend:latest
+    image: ${REGISTRY_URL:-registry.banrukrot.com}/pos-backend:${IMAGE_TAG:-latest}
     container_name: pos-backend
     restart: always
     depends_on:
@@ -56,7 +56,7 @@ services:
         limits: { memory: 256M, cpus: '0.50' }
 
   pos-frontend:
-    image: ${REGISTRY_URL:-registry.banrukrot.com}/pos-frontend:latest
+    image: ${REGISTRY_URL:-registry.banrukrot.com}/pos-frontend:${IMAGE_TAG:-latest}
     container_name: pos-frontend
     restart: always
     depends_on:

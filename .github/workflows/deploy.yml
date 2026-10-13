@@ -2,7 +2,15 @@ name: Build and Deploy POS
 on:
   push:
     branches: [main]
+  pull_request:          # PRs only run the test job; build/deploy are gated to main below
   workflow_dispatch:
+
+concurrency:
+  group: pos-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}   # never cancel a running deploy
+
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -24,6 +32,7 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     needs: test
+    if: github.event_name != 'pull_request'
     strategy:
       matrix:
         include:
@@ -42,7 +51,9 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           push: true
-          tags: ${{ secrets.REGISTRY_URL }}/pos-${{ matrix.name }}:latest
+          tags: |
+            ${{ secrets.REGISTRY_URL }}/pos-${{ matrix.name }}:latest
+            ${{ secrets.REGISTRY_URL }}/pos-${{ matrix.name }}:${{ github.sha }}
           labels: project=pos
           cache-from: type=gha,scope=pos-${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=pos-${{ matrix.name }}
@@ -50,6 +61,7 @@ jobs:
   deploy:
     runs-on: ubuntu-24.04
     needs: build
+    environment: production
     steps:
       - uses: actions/checkout@v4
       - uses: appleboy/scp-action@v0.1.7
@@ -62,19 +74,47 @@ jobs:
           strip_components: 1
           target: /home/${{ secrets.SERVER_SSH_USERNAME }}/pos
       - uses: appleboy/ssh-action@v1.2.0
+        env:
+          REGISTRY_URL: ${{ secrets.REGISTRY_URL }}
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+          IMAGE_TAG: ${{ github.sha }}
         with:
           host: ${{ secrets.SERVER_SSH_HOST }}
           port: ${{ secrets.SERVER_SSH_PORT }}
           username: ${{ secrets.SERVER_SSH_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: REGISTRY_URL,REGISTRY_USERNAME,REGISTRY_PASSWORD,IMAGE_TAG
           script: |
             set -e
-            cd /home/${{ secrets.SERVER_SSH_USERNAME }}/pos
-            echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_URL }} -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
-            export REGISTRY_URL=${{ secrets.REGISTRY_URL }}
+            cd ~/pos
+            echo "$REGISTRY_PASSWORD" | docker login "$REGISTRY_URL" -u "$REGISTRY_USERNAME" --password-stdin
+            # Remember the running tag so a failed deploy can roll back to it.
+            PREV=$(sed -n 's/^IMAGE_TAG=//p' .deployed 2>/dev/null || true)
+            export REGISTRY_URL IMAGE_TAG
+            # The proxy network belongs to banrukrot.com's stack; fail clearly instead of creating our own.
+            docker network inspect loei-banrakrod_default >/dev/null || { echo "::error::network loei-banrakrod_default is missing"; exit 1; }
             docker compose pull
             docker compose up -d --remove-orphans
+            ok=0
+            for i in $(seq 1 18); do
+              if [ "$(docker inspect -f '{{.State.Health.Status}}' pos-backend)" = healthy ]                  && [ "$(docker inspect -f '{{.State.Health.Status}}' pos-frontend)" = healthy ]; then ok=1; break; fi
+              sleep 5
+            done
+            if [ "$ok" != 1 ]; then
+              echo "::error::POS containers not healthy"; docker compose logs --tail 50 pos-backend pos-frontend
+              if [ -n "$PREV" ]; then
+                echo "Rolling back to $PREV"; export IMAGE_TAG=$PREV
+                docker compose pull && docker compose up -d --remove-orphans
+              fi
+              exit 1
+            fi
+            echo "IMAGE_TAG=$IMAGE_TAG" > .deployed
+            # Sha-tagged images are no longer dangling, so prune would keep them forever: keep the newest 3 per
+            # image (current + rollback targets). Only label=project=pos images are listed; in-use ones refuse to go.
+            for repo in pos-backend pos-frontend; do
+              docker image ls --filter label=project=pos --filter "reference=*/$repo" --format '{{.ID}} {{.Tag}}'                 | awk '$2 != "latest" && !seen[$1]++ { print $1 }' | tail -n +4 | xargs -r docker rmi 2>/dev/null || true
+            done
             docker image prune -f --filter "label=project=pos"
-            sleep 20
             docker ps --format '{{.Names}} {{.Status}}' | grep -E '^pos-'
-            curl -fsS https://banrukrot.com/api/status
+            curl -fsS https://banrukrot.com/api/status   # the neighbouring site must still be up
