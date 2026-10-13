@@ -22,6 +22,8 @@ const AddLine = z.object({
   menuItemId: z.string().uuid(),
   qty: z.number().int().min(1).max(999).default(1),
   note: z.string().trim().max(200).optional(),
+  /** Chosen modifier ids (ระดับเผ็ด, ท็อปปิ้ง …) from the groups attached to this dish. */
+  options: z.array(z.string().uuid()).max(30).default([]),
 });
 const SetQty = z.object({ qty: z.number().int().min(1).max(999) });
 const Reason = z.object({ reason: z.string().trim().min(3).max(300) });
@@ -104,6 +106,32 @@ async function priced(c: Tx, s: Session, id: string, lock = false) {
   return { order, lines, live, bill, tenant: t, rate };
 }
 
+interface Option { id: string; name: string; price: number }
+
+/** "ผัดกะเพรา (เผ็ดมาก, ไข่ดาว)" — what a tax document or ticket shows for a dish with options. */
+export const withOptions = (name: string, options: Option[] | null | undefined) =>
+  options?.length ? `${name} (${options.map((o) => o.name).join(', ')})` : name;
+
+/** Check the choices against the groups attached to the dish and price them; throws a 400/404 on a bad pick. */
+async function resolveOptions(c: Tx, itemId: string, ids: string[]): Promise<Option[]> {
+  const uniq = [...new Set(ids)];
+  const groups = await many(c,
+    `SELECT g.id, g.name, g.min_select, g.max_select FROM menu_item_modifier_groups mg JOIN modifier_groups g ON g.id = mg.group_id
+      WHERE mg.menu_item_id = $1 AND g.active`, [itemId]);
+  const mods = uniq.length ? await many(c,
+    `SELECT id, group_id, name, price FROM modifiers WHERE id = ANY($1::uuid[]) AND active`, [uniq]) : [];
+  if (mods.length !== uniq.length || mods.some((m) => !groups.some((g) => g.id === m.group_id))) throw new HttpError(400, 'bad_option');
+  for (const g of groups) {
+    const n = mods.filter((m) => m.group_id === g.id).length;
+    if (n < g.min_select) throw new HttpError(400, 'option_required', g.name);
+    if (n > g.max_select) throw new HttpError(400, 'option_too_many', g.name);
+  }
+  // keep the order the owner arranged the groups and options in, so tickets read the same every time
+  const order = new Map(ids.map((id, i) => [id, i]));
+  return uniq.map((id) => mods.find((m) => m.id === id)!).sort((a, b) => order.get(a.id)! - order.get(b.id)!)
+    .map((m) => ({ id: m.id, name: m.name, price: m.price }));
+}
+
 function requireOpen(order: { status: string }) {
   if (order.status !== 'open') throw new HttpError(409, 'order_closed');
 }
@@ -158,15 +186,18 @@ export async function orderRoutes(app: FastifyInstance, ctx: Ctx) {
       requireOpen(order);
       const item = await one(c, `SELECT * FROM menu_items WHERE id = $1 AND active`, [b.menuItemId]);
       if (!item) throw new HttpError(404, 'menu_item_not_found');
+      const options = await resolveOptions(c, item.id, b.options);
+      const unitPrice = item.price + options.reduce((s, o) => s + o.price, 0);
       const same = await one(c,
         `SELECT id FROM order_lines WHERE order_id = $1 AND menu_item_id = $2 AND status = 'new'
-            AND coalesce(note, '') = $3 AND unit_price = $4`, [id, item.id, b.note ?? '', item.price]);
+            AND coalesce(note, '') = $3 AND unit_price = $4 AND options = $5::jsonb`,
+        [id, item.id, b.note ?? '', unitPrice, JSON.stringify(options)]);
       reply.status(201);
       if (same) return one(c, `UPDATE order_lines SET qty = qty + $2 WHERE id = $1 RETURNING *`, [same.id, b.qty]);
       return one(c,
-        `INSERT INTO order_lines (order_id, menu_item_id, name, unit_price, qty, vat_exempt, note)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [id, item.id, item.name, item.price, b.qty, item.vat_exempt, b.note || null]);
+        `INSERT INTO order_lines (order_id, menu_item_id, name, unit_price, qty, vat_exempt, note, options)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        [id, item.id, item.name, unitPrice, b.qty, item.vat_exempt, b.note || null, JSON.stringify(options)]);
     });
   });
 
@@ -200,7 +231,7 @@ export async function orderRoutes(app: FastifyInstance, ctx: Ctx) {
       // The kitchen already cooked it, so its ingredients are booked as waste.
       const wasted = l.menu_item_id ? await drawRecipe(c, {
         menuItemId: l.menu_item_id, servings: l.qty, kind: 'waste', refType: 'order_line', refId: lineId,
-        reason: `ยกเลิก ${l.name}: ${reason}`, userId: req.session.userId,
+        optionIds: l.options.map((o: Option) => o.id), reason: `ยกเลิก ${l.name}: ${reason}`, userId: req.session.userId,
       }) : 0;
       await audit(c, req.session.userId, 'line.void', 'order_line', lineId, { orderId: id, name: l.name, qty: l.qty, reason, wasted });
       return { voided: true };
@@ -214,7 +245,7 @@ export async function orderRoutes(app: FastifyInstance, ctx: Ctx) {
       requireOpen(order);
       // One timestamp per batch, so the ticket page can print exactly what went to the kitchen together.
       const sent = await many(c,
-        `UPDATE order_lines SET status = 'sent', sent_at = now() WHERE order_id = $1 AND status = 'new' RETURNING id, name, qty, note, sent_at`, [id]);
+        `UPDATE order_lines SET status = 'sent', sent_at = now() WHERE order_id = $1 AND status = 'new' RETURNING id, name, qty, note, options, sent_at`, [id]);
       return { sent, sentAt: sent[0]?.sent_at ?? null };
     });
   });
@@ -285,8 +316,8 @@ export async function orderRoutes(app: FastifyInstance, ctx: Ctx) {
         } else {
           await c.query(`UPDATE order_lines SET qty = qty - $2 WHERE id = $1`, [lineId, qty]);
           await c.query(
-            `INSERT INTO order_lines (order_id, menu_item_id, name, unit_price, qty, vat_exempt, note, status, sent_at, created_at)
-             SELECT $2, menu_item_id, name, unit_price, $3, vat_exempt, note, status, sent_at, created_at FROM order_lines WHERE id = $1`,
+            `INSERT INTO order_lines (order_id, menu_item_id, name, unit_price, qty, vat_exempt, note, options, status, sent_at, created_at)
+             SELECT $2, menu_item_id, name, unit_price, $3, vat_exempt, note, options, status, sent_at, created_at FROM order_lines WHERE id = $1`,
             [lineId, child.id, qty]);
         }
       }
@@ -355,13 +386,14 @@ export async function orderRoutes(app: FastifyInstance, ctx: Ctx) {
       const doc = await issueDocument(c, {
         session: req.session, tenant: t, terminal: term, branch, orderId: id,
         docType: b.docType, bill: p.bill, rate: p.rate.rate, rounding: adjustment, buyer: b.buyer,
-        lines: p.live.map((l, i) => ({ name: l.name, qty: l.qty, unitPrice: l.unit_price, vatExempt: l.vat_exempt, ...p.bill.lines[i]! })),
+        lines: p.live.map((l, i) => ({ name: withOptions(l.name, l.options), qty: l.qty, unitPrice: l.unit_price, vatExempt: l.vat_exempt, ...p.bill.lines[i]! })),
       });
 
       // Freeze each line's pre-VAT revenue and recipe cost, and take the ingredients out of stock.
       for (const [i, l] of p.live.entries()) {
         const cost = l.menu_item_id ? await drawRecipe(c, {
-          menuItemId: l.menu_item_id, servings: l.qty, kind: 'sale', refType: 'order', refId: id, userId: req.session.userId,
+          menuItemId: l.menu_item_id, servings: l.qty, kind: 'sale', refType: 'order', refId: id,
+          optionIds: l.options.map((o: Option) => o.id), userId: req.session.userId,
         }) : 0;
         await c.query(`UPDATE order_lines SET net_ex_vat = $2, cost_snapshot = $3 WHERE id = $1`, [l.id, p.bill.lines[i]!.netExVat, cost]);
       }

@@ -96,9 +96,14 @@ export function usesPrep(candidate: string, prepId: string, book: PrepBook, dept
   return (book.preps.get(candidate) ?? []).some((p) => usesPrep(p.ingredient_id, prepId, book, depth + 1));
 }
 
-async function recipeOf(c: Tx, menuItemId: string): Promise<RecipeRow[]> {
+/** The dish's recipe plus the extra ingredients of any options chosen on the line (e.g. +1 egg). */
+async function recipeOf(c: Tx, menuItemId: string, optionIds: string[] = []): Promise<RecipeRow[]> {
   const lines = await many<{ ingredient_id: string; qty: number }>(c,
     `SELECT ingredient_id, qty FROM recipe_lines WHERE menu_item_id = $1`, [menuItemId]);
+  if (optionIds.length) {
+    lines.push(...await many<{ ingredient_id: string; qty: number }>(c,
+      `SELECT ingredient_id, qty FROM modifier_ingredients WHERE modifier_id = ANY($1::uuid[])`, [optionIds]));
+  }
   return lines.length ? explode(lines, await prepBook(c)) : [];
 }
 
@@ -130,9 +135,9 @@ export async function drawLines(c: Tx, rows: RecipeRow[], a: {
  */
 export async function drawRecipe(c: Tx, a: {
   menuItemId: string; servings: number; kind: 'sale' | 'waste'; refType: string; refId: string;
-  reason?: string; userId: string | null;
+  optionIds?: string[]; reason?: string; userId: string | null;
 }): Promise<number> {
-  return drawLines(c, await recipeOf(c, a.menuItemId), a);
+  return drawLines(c, await recipeOf(c, a.menuItemId, a.optionIds), a);
 }
 
 /** Cost of one serving at current average costs, rounded exactly as a sale would book it. */

@@ -8,10 +8,11 @@ import { api, errText } from '@/lib/api';
 import { BackIcon, BowlIcon, tintFor } from '@/lib/ui';
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../TopBar';
+import { OptionPicker, type OptionGroup } from './OptionPicker';
 import { TableOps } from './TableOps';
 
-interface Item { id: string; category_id: string | null; name: string; price: number; active: boolean; image_url: string | null }
-interface Line { id: string; menu_item_id: string; name: string; unit_price: number; qty: number; note: string | null; status: 'new' | 'sent' | 'void'; void_reason: string | null }
+interface Item { id: string; category_id: string | null; name: string; price: number; active: boolean; image_url: string | null; group_ids: string[] }
+interface Line { id: string; menu_item_id: string; name: string; unit_price: number; qty: number; note: string | null; options: { id: string; name: string; price: number }[]; status: 'new' | 'sent' | 'void'; void_reason: string | null }
 interface OrderView {
   order: { id: string; bill_no: number; status: string; table_id: string | null; table_name: string | null; guests: number; channel: string; discount_type: string; discount_value: number };
   parent: { id: string; bill_no: number; table_name: string | null } | null;
@@ -29,7 +30,8 @@ export default function OrderPage() {
   const router = useRouter();
   const { me } = useMe();
   const canPay = !me || ['owner', 'manager', 'cashier'].includes(me.role);
-  const [menu, setMenu] = useState<{ categories: { id: string; name: string }[]; items: Item[] } | null>(null);
+  const [menu, setMenu] = useState<{ categories: { id: string; name: string }[]; items: Item[]; groups: OptionGroup[] } | null>(null);
+  const [picking, setPicking] = useState<Item | null>(null);
   const [cat, setCat] = useState<string>('all');
   const [view, setView] = useState<OrderView | null>(null);
   const [err, setErr] = useState('');
@@ -94,7 +96,7 @@ export default function OrderPage() {
             {items.map((i) => {
               const q = qtyByItem.get(i.id) ?? 0;
               return (
-                <button key={i.id} aria-label={`เพิ่ม ${i.name}`} onClick={() => run(() => api('POST', `/api/orders/${id}/lines`, { menuItemId: i.id }))}
+                <button key={i.id} aria-label={`เพิ่ม ${i.name}`} onClick={() => i.group_ids.length ? setPicking(i) : run(() => api('POST', `/api/orders/${id}/lines`, { menuItemId: i.id }))}
                   style={{ display: 'flex', flexDirection: 'column', padding: 0, textAlign: 'left', background: '#fff', border: '1px solid var(--line)', borderRadius: 16, overflow: 'hidden' }}>
                   <div style={{ position: 'relative', width: '100%', height: 104, background: tintFor(i.id), display: 'grid', placeItems: 'center' }}>
                     {i.image_url ? <img src={i.image_url} alt="" loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} /> : <BowlIcon />}
@@ -140,6 +142,7 @@ export default function OrderPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 17, fontWeight: 600 }}>{l.name}</div>
                     <div className="muted" style={{ fontSize: 14 }}>
+                      {l.options.length > 0 && <div style={{ color: 'var(--ink)' }}>{l.options.map((o) => o.name).join(' · ')}</div>}
                       ฿{formatBaht(l.unit_price)}{l.note ? ` · ${l.note}` : ''}{l.status === 'sent' ? ' · ส่งครัวแล้ว' : ''}
                     </div>
                   </div>
@@ -212,6 +215,11 @@ export default function OrderPage() {
           </div>
         </aside>
       </div>
+      {picking && menu && (
+        <OptionPicker item={picking} groups={picking.group_ids.map((g) => menu.groups.find((x) => x.id === g)).filter((g): g is OptionGroup => !!g)}
+          onCancel={() => setPicking(null)}
+          onAdd={(a) => { const item = picking; setPicking(null); run(() => api('POST', `/api/orders/${id}/lines`, { menuItemId: item.id, qty: a.qty, options: a.options, note: a.note || undefined })); }} />
+      )}
     </div>
   );
 }

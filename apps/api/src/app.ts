@@ -5,6 +5,8 @@ import { guard, HttpError, makeTokens, type Role } from './auth.ts';
 import { one, withPlatform, type Db } from './db.ts';
 import { authRoutes } from './routes/auth.ts';
 import { costingRoutes } from './routes/costing.ts';
+import { customerRoutes } from './routes/customers.ts';
+import { modifierRoutes } from './routes/modifiers.ts';
 import { auditRoutes } from './routes/audit.ts';
 import { orderRoutes } from './routes/orders.ts';
 import { platformRoutes } from './routes/platform.ts';
@@ -60,6 +62,8 @@ export function buildApp(deps: AppDeps) {
   app.register(async (a) => orderRoutes(a, ctx));
   app.register(async (a) => reportRoutes(a, ctx));
   app.register(async (a) => costingRoutes(a, ctx));
+  app.register(async (a) => modifierRoutes(a, ctx));
+  app.register(async (a) => customerRoutes(a, ctx));
   app.register(async (a) => staffRoutes(a, ctx));
   app.register(async (a) => shiftRoutes(a, ctx));
   app.register(async (a) => printerRoutes(a, ctx));

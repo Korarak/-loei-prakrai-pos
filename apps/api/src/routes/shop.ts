@@ -35,7 +35,8 @@ const NewTerminal = z.object({ name: z.string().trim().min(1).max(50) });
 /** Every shop table in a data export, with columns that must never leave the server removed. */
 const EXPORT_TABLES = ['branches', 'terminals', 'menu_categories', 'menu_items', 'dining_tables', 'orders', 'order_lines',
   'payments', 'tax_documents', 'doc_sequences', 'ingredients', 'recipe_lines', 'purchases', 'purchase_lines',
-  'stock_movements', 'stock_counts', 'stock_count_lines', 'expenses', 'prep_lines', 'shifts', 'cash_moves', 'audit_log'] as const;
+  'stock_movements', 'stock_counts', 'stock_count_lines', 'expenses', 'prep_lines', 'shifts', 'cash_moves', 'audit_log',
+  'modifier_groups', 'modifiers', 'modifier_ingredients', 'menu_item_modifier_groups', 'customers'] as const;
 
 const Item = z.object({
   categoryId: z.string().uuid().nullable(),
@@ -128,9 +129,16 @@ export async function shopRoutes(app: FastifyInstance, ctx: Ctx) {
     withTenant(ctx.db, req.session.tenantId, async (c) => ({
       categories: await many(c, `SELECT id, name, sort FROM menu_categories ORDER BY sort, name`),
       // grouped by category order so the "all" view reads like the printed menu
-      items: await many(c, `SELECT i.id, i.category_id, i.name, i.price, i.vat_exempt, i.station, i.image_url, i.active, i.sort
+      items: await many(c, `SELECT i.id, i.category_id, i.name, i.price, i.vat_exempt, i.station, i.image_url, i.active, i.sort,
+                                   coalesce((SELECT array_agg(mg.group_id ORDER BY g.sort, g.name) FROM menu_item_modifier_groups mg
+                                               JOIN modifier_groups g ON g.id = mg.group_id AND g.active WHERE mg.menu_item_id = i.id), '{}') AS group_ids
                               FROM menu_items i LEFT JOIN menu_categories k ON k.id = i.category_id
                              ORDER BY k.sort NULLS LAST, i.sort, i.name`),
+      // option groups the till asks about when a dish is tapped (only what can still be chosen)
+      groups: await many(c, `SELECT g.id, g.name, g.min_select, g.max_select,
+                                    coalesce((SELECT json_agg(json_build_object('id', m.id, 'name', m.name, 'price', m.price) ORDER BY m.sort, m.name)
+                                                FROM modifiers m WHERE m.group_id = g.id AND m.active), '[]') AS options
+                               FROM modifier_groups g WHERE g.active ORDER BY g.sort, g.name`),
     })));
 
   app.post('/api/menu/categories', { preHandler: ctx.auth(atLeast('manager')) }, async (req, reply) => {

@@ -1,11 +1,13 @@
 import Link from 'next/link';
 
-export type OwnerTab = 'profit' | 'menu' | 'stock' | 'expenses' | 'reports' | 'staff' | 'audit' | 'settings';
+export type OwnerTab = 'profit' | 'menu' | 'options' | 'customers' | 'stock' | 'expenses' | 'reports' | 'staff' | 'audit' | 'settings';
 
 const TABS: Array<[OwnerTab, string, string]> = [
   ['profit', '/owner/profit', 'กำไร–ต้นทุน'],
   ['menu', '/owner/menu', 'เมนูและสูตร'],
+  ['options', '/owner/options', 'ตัวเลือกเมนู'],
   ['stock', '/owner/stock', 'สต็อกวัตถุดิบ'],
+  ['customers', '/owner/customers', 'ลูกค้า'],
   ['expenses', '/owner/expenses', 'ค่าใช้จ่าย'],
   ['reports', '/owner/reports', 'รายงานภาษี'],
   ['staff', '/owner/staff', 'พนักงานและเครื่อง'],

@@ -8,7 +8,7 @@ import { kitchenLines, printTicket, stationPrinter, usePrinters, type PrintResul
 
 const STATION: Record<string, string> = { kitchen: 'ครัว', bar: 'บาร์น้ำ' };
 
-interface Line { id: string; name: string; qty: number; note: string | null; status: string; station: string | null; sent_at: string | null }
+interface Line { id: string; name: string; qty: number; note: string | null; options: { name: string }[]; status: string; station: string | null; sent_at: string | null }
 
 const hhmm = (iso: string) =>
   new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(iso));
@@ -70,6 +70,7 @@ function Ticket() {
                 <b style={{ fontSize: 24, minWidth: 30 }}>{l.qty}</b>
                 <div>
                   <div style={{ fontSize: 20, fontWeight: 700 }}>{l.name}</div>
+                  {l.options.length > 0 && <div style={{ fontSize: 17, fontWeight: 600 }}>+ {l.options.map((o) => o.name).join(', ')}</div>}
                   {l.note && <div style={{ fontSize: 17 }}>** {l.note}</div>}
                 </div>
               </div>

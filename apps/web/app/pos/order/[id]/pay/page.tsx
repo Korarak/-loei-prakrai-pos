@@ -8,6 +8,7 @@ import { api, errText } from '@/lib/api';
 import { BackIcon } from '@/lib/ui';
 import { PromptPayQr } from '@/lib/PromptPayQr';
 import { terminalFor, useMe } from '@/lib/useMe';
+import { CustomerPicker } from './CustomerPicker';
 
 type Method = 'cash' | 'promptpay' | 'card' | 'transfer';
 type DocType = 'ABB' | 'FULL' | 'RECEIPT';
@@ -23,6 +24,7 @@ export default function PayPage() {
   const [received, setReceived] = useState('');
   const [doc, setDoc] = useState<DocType | null>(null);
   const [buyer, setBuyer] = useState({ name: '', taxId: '', branch: '00000', address: '' });
+  const [saveCust, setSaveCust] = useState(false);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -58,6 +60,8 @@ export default function PayPage() {
         payments: [method === 'cash' ? { method, tendered: got > 0 ? got : undefined } : { method }],
         buyer: docChoice === 'FULL' ? buyer : undefined,
       });
+      // Keep the buyer for next time; a duplicate or a failed save must never hold up the receipt.
+      if (docChoice === 'FULL' && saveCust) await api('POST', '/api/customers', buyer).catch(() => null);
       router.push(`/receipt/${r.document.id}?change=${r.change}&fresh=1`);
     } catch (e) {
       setErr(errText(e));
@@ -166,12 +170,16 @@ export default function PayPage() {
           ))}
           {docChoice === 'FULL' && (
             <div className="card" style={{ padding: '12px 14px', display: 'grid', gap: 8 }}>
+              <CustomerPicker onPick={(b) => { setBuyer(b); setSaveCust(false); }} />
               <label className="field">ชื่อผู้ซื้อ / บริษัท<input value={buyer.name} onChange={(e) => setBuyer({ ...buyer, name: e.target.value })} /></label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 8 }}>
                 <label className="field">เลขผู้เสียภาษี 13 หลัก<input inputMode="numeric" value={buyer.taxId} onChange={(e) => setBuyer({ ...buyer, taxId: e.target.value })} /></label>
                 <label className="field">สาขา<input inputMode="numeric" value={buyer.branch} onChange={(e) => setBuyer({ ...buyer, branch: e.target.value })} /></label>
               </div>
               <label className="field">ที่อยู่<input value={buyer.address} onChange={(e) => setBuyer({ ...buyer, address: e.target.value })} /></label>
+              <label className="row" style={{ minHeight: 44, fontSize: 15 }}>
+                <input type="checkbox" checked={saveCust} onChange={(e) => setSaveCust(e.target.checked)} style={{ width: 22, height: 22, accentColor: 'var(--accent)' }} /> บันทึกเป็นลูกค้าประจำ
+              </label>
             </div>
           )}
           <span className="spacer" />

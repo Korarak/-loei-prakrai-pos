@@ -122,14 +122,14 @@ export function receiptLines(d: any, change = 0, copy = false): TicketLine[] {
 
 /** One kitchen/bar ticket: big table name and quantities so the cook reads it from a step away. */
 export function kitchenLines(a: { where: string; station: string; billNo: string | number; guests: number; time: string; reprint: boolean;
-  lines: Array<{ qty: number; name: string; note: string | null }> }): TicketLine[] {
+  lines: Array<{ qty: number; name: string; note: string | null; options?: Array<{ name: string }> }> }): TicketLine[] {
   const L: TicketLine[] = [
     { t: 'row', left: a.where, right: a.station, size: 40, bold: true },
     { t: 'text', text: `บิล #${a.billNo} · ${a.guests} ท่าน · ${a.time}${a.reprint ? ' · พิมพ์ซ้ำ' : ''}`, size: 24 },
     { t: 'hr', thick: true },
   ];
   for (const l of a.lines) {
-    L.push({ t: 'item', qty: String(l.qty), name: l.name, sub: l.note ? `** ${l.note}` : undefined, size: 32, bold: true }, { t: 'hr' });
+    L.push({ t: 'item', qty: String(l.qty), name: l.name, sub: [l.options?.length ? `+ ${l.options.map((o) => o.name).join(', ')}` : '', l.note ? `** ${l.note}` : ''].filter(Boolean).join(' ') || undefined, size: 32, bold: true }, { t: 'hr' });
   }
   return L;
 }
