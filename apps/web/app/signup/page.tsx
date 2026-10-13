@@ -47,6 +47,7 @@ export default function Signup() {
           <label className="field">จำนวนโต๊ะ<input name="tables" type="number" min={0} max={100} defaultValue={12} inputMode="numeric" /></label>
           <label className="field">เมนูเริ่มต้น
             <select name="template" defaultValue="aharn">
+              <option value="steak">ร้านสเต็ก · ข้าวขาหมู · หมูกรอบ + เครื่องดื่ม/แอลกอฮอล์ (พร้อมสูตรและตัวเลือก)</option>
               <option value="aharn">เมนูตัวอย่าง (อาหารตามสั่ง)</option>
               <option value="blank">เริ่มจากว่าง</option>
             </select>

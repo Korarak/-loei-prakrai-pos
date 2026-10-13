@@ -103,7 +103,7 @@ export default function OrderPage() {
                     {q > 0 && <span style={{ position: 'absolute', top: 8, right: 8, minWidth: 34, height: 34, padding: '0 8px', borderRadius: 17, background: 'var(--accent)', color: '#fff', fontSize: 17, fontWeight: 700, display: 'grid', placeItems: 'center' }}>{q}</span>}
                   </div>
                   <div style={{ padding: '10px 14px 12px', width: '100%' }}>
-                    <div style={{ fontSize: 16, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{i.name}</div>
+                    <div style={{ fontSize: 16, fontWeight: 600, lineHeight: 1.25, minHeight: 40, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{i.name}</div>
                     <div style={{ fontSize: 22, fontWeight: 700 }}>฿{formatBaht(i.price).replace(/\.00$/, '')}</div>
                   </div>
                 </button>

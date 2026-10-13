@@ -6,6 +6,7 @@ import { checkSecret, COOKIE, hashSecret, HttpError, type Session } from '../aut
 import { audit, many, one, withPlatform, withTenant } from '../db.ts';
 import { checkTotp, hashRecovery, newRecoveryCodes, newTotpSecret, otpauthUri } from '../totp.ts';
 import { seedCosting, seedTemplate } from '../template.ts';
+import { seedSteak } from '../template-steak.ts';
 import { deviceOf } from '../device.ts';
 import { isPlatformAdmin } from './platform.ts';
 
@@ -15,7 +16,7 @@ const Signup = z.object({
   phone: z.string().trim().max(20).optional(),
   password: z.string().min(8).max(200),
   shopName: z.string().trim().min(1).max(100),
-  template: z.enum(['aharn', 'blank']).default('aharn'),
+  template: z.enum(['aharn', 'steak', 'blank']).default('aharn'),
   tableCount: z.number().int().min(0).max(100).default(12),
 });
 
@@ -70,6 +71,7 @@ export async function authRoutes(app: FastifyInstance, ctx: Ctx) {
         await seedTemplate(c);
         await seedCosting(c);
       }
+      if (b.template === 'steak') await seedSteak(c);
     });
 
     reply.status(201);
