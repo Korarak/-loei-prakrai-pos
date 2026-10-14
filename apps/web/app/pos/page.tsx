@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
+import { Sheet } from '@/lib/owner';
+import { TablesSection } from '../owner/settings/TablesSection';
 import { terminalFor, useMe } from '@/lib/useMe';
 import { TopBar } from './TopBar';
 
@@ -20,6 +22,8 @@ export default function Tables() {
   const [tables, setTables] = useState<TableRow[] | null>(null);
   const [err, setErr] = useState('');
   const [noShift, setNoShift] = useState(false);
+  const [managing, setManaging] = useState(false);
+  const canManage = !!me && (me.role === 'owner' || me.role === 'manager');
   const canCash = !!me && ['owner', 'manager', 'cashier'].includes(me.role);
 
   useEffect(() => {
@@ -27,12 +31,21 @@ export default function Tables() {
     api('GET', `/api/shifts/current?terminalId=${terminalFor(me).id}`).then((s) => setNoShift(s === null)).catch(() => {});
   }, [me, canCash]);
 
+  const load = () => api<TableRow[]>('GET', '/api/tables').then(setTables).catch((e) => setErr(errText(e)));
   useEffect(() => {
-    const load = () => api<TableRow[]>('GET', '/api/tables').then(setTables).catch((e) => setErr(errText(e)));
     load();
     const t = setInterval(load, 10_000);
     return () => clearInterval(t);
   }, []);
+
+  /** One tap: the next free number, 4 seats. Rename or resize later from "จัดการโต๊ะ". */
+  async function addNext() {
+    setErr('');
+    const names = new Set(tables?.map((t) => t.name));
+    let n = (tables?.length ?? 0) + 1;
+    while (names.has(String(n))) n++;
+    try { await api('POST', '/api/tables', { name: String(n), seats: 4 }); await load(); } catch (e) { setErr(errText(e)); }
+  }
 
   async function open(t: TableRow | null) {
     if (t?.order_id) return router.push(`/pos/order/${t.order_id}`);
@@ -51,6 +64,7 @@ export default function Tables() {
           <h1 style={{ margin: 0, fontSize: 26 }}>ผังโต๊ะ</h1>
           <span className="muted">ว่าง {(tables?.length ?? 0) - busy} · มีลูกค้า {busy}</span>
           <span className="spacer" />
+          {canManage && <button className="btn" onClick={() => setManaging(true)}>จัดการโต๊ะ</button>}
           <button className="btn btn-primary btn-lg" onClick={() => open(null)}>+ ออเดอร์กลับบ้าน</button>
         </div>
         {noShift && (
@@ -83,9 +97,20 @@ export default function Tables() {
               </button>
             );
           })}
+          {canManage && tables && (
+            <button onClick={addNext} aria-label="เพิ่มโต๊ะ"
+              style={{ minHeight: 150, borderRadius: 16, border: '2px dashed #A9B2A8', background: 'transparent', color: 'var(--muted)', fontSize: 18, fontWeight: 600 }}>
+              + เพิ่มโต๊ะ
+            </button>
+          )}
         </div>
-        {tables?.length === 0 && <p className="muted">ยังไม่มีโต๊ะ ใช้ปุ่มออเดอร์กลับบ้านได้เลย</p>}
+        {tables?.length === 0 && <p className="muted">{canManage ? 'ยังไม่มีโต๊ะ แตะ “+ เพิ่มโต๊ะ” ได้เลย หรือใช้ปุ่มออเดอร์กลับบ้าน' : 'ยังไม่มีโต๊ะ ใช้ปุ่มออเดอร์กลับบ้านได้เลย'}</p>}
       </main>
+      {managing && (
+        <Sheet title="จัดการโต๊ะ" onClose={() => { setManaging(false); load(); }} wide>
+          <TablesSection canEdit={canManage} bare onChanged={load} />
+        </Sheet>
+      )}
     </>
   );
 }

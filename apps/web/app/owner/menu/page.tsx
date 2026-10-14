@@ -1,41 +1,48 @@
 'use client';
 
-import { formatBaht, pct, valueOf } from '@prakai/core';
+import { formatBaht } from '@prakai/core';
 import { useEffect, useMemo, useState } from 'react';
-import { api, errText, uploadMenuImage } from '@/lib/api';
-import { fmtQty, Sheet, Stat, toSatang, UNIT } from '@/lib/owner';
+import { api, errText } from '@/lib/api';
+import { Sheet, Stat } from '@/lib/owner';
 import { BowlIcon, tintFor } from '@/lib/ui';
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
-
-/** Food cost above this reads as a warning (design doc §4.4 suggests 28–35%). */
-const TARGET_PCT = 35;
-
-interface Line { ingredientId: string; qty: string }
-
-const lineCost = (ing: any, qty: number) => (ing && qty > 0 ? valueOf(Math.round((qty * 100 / ing.yield_pct) * 10_000) / 10_000, ing.avg_cost) : 0);
+import { ItemSheet, TARGET_PCT } from './ItemSheet';
 
 export default function MenuCosting() {
   const { me } = useMe();
   const [items, setItems] = useState<any[] | null>(null);
   const [ings, setIngs] = useState<any[]>([]);
   const [cats, setCats] = useState<any[]>([]);
+  const [groups, setGroups] = useState<any[]>([]);
   const [open, setOpen] = useState<any>(null);
   const [adding, setAdding] = useState(false);
   const [managingCats, setManagingCats] = useState(false);
+  const [q, setQ] = useState('');
+  const [cat, setCat] = useState<string>('all');
   const [err, setErr] = useState('');
 
   const load = () => Promise.all([
     api('GET', '/api/costing/menu').then(setItems),
     api('GET', '/api/ingredients').then(setIngs),
     api('GET', '/api/menu').then((m) => setCats(m.categories)),
+    api('GET', '/api/modifier-groups').then(setGroups),
   ]).catch((e) => setErr(errText(e)));
   useEffect(() => { load(); }, []);
 
   const withRecipe = items?.filter((i) => i.recipe_lines > 0) ?? [];
   const avgPct = withRecipe.length ? Math.round(withRecipe.reduce((s, i) => s + i.food_cost_pct, 0) / withRecipe.length * 10) / 10 : 0;
   const over = withRecipe.filter((i) => i.food_cost_pct > TARGET_PCT).length;
+  // Price → pre-VAT ratio this shop uses, so a new dish previews food cost before it exists on the server.
+  const vatRatio = useMemo(() => {
+    const ref = items?.find((i) => i.price > 0 && !i.vat_exempt);
+    return ref ? ref.price_ex_vat / ref.price : 1;
+  }, [items]);
+  const shown = useMemo(() => {
+    const n = q.trim().toLowerCase();
+    return (items ?? []).filter((i) => (cat === 'all' || i.category_id === cat) && (!n || i.name.toLowerCase().includes(n)));
+  }, [items, q, cat]);
 
   return (
     <>
@@ -50,27 +57,46 @@ export default function MenuCosting() {
             <Stat label={`เมนูที่ต้นทุนเกิน ${TARGET_PCT}%`} value={over} tone={over ? 'warn' : undefined} />
           </div>
         )}
-        <section className="card" style={{ padding: '12px 18px' }}>
-          <div className="row" style={{ paddingBottom: 8 }}>
-            <h1 style={{ margin: 0, fontSize: 20 }}>ต้นทุนต่อจาน</h1>
-            <span className="muted" style={{ fontSize: 14 }}>คิดจากสูตร × ต้นทุนเฉลี่ยวัตถุดิบล่าสุด · ราคาก่อน VAT · แตะเมนูเพื่อแก้สูตร</span>
+        <section className="card" style={{ padding: '12px 18px', display: 'grid', gap: 10 }}>
+          <div className="row" style={{ flexWrap: 'wrap' }}>
+            <h1 style={{ margin: 0, fontSize: 20 }}>เมนูและต้นทุน</h1>
+            <span className="muted" style={{ fontSize: 14 }}>แตะเมนูเพื่อแก้ราคา สูตร รูป และตัวเลือก · ต้นทุนคิดจากราคาก่อน VAT</span>
             <span className="spacer" />
             <button className="btn" onClick={() => setManagingCats(true)}>จัดการหมวด</button>
             <button className="btn btn-primary" onClick={() => setAdding(true)}>+ เพิ่มเมนู</button>
           </div>
+          <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
+            <input aria-label="ค้นหาเมนู" placeholder="ค้นหาเมนู" value={q} onChange={(e) => setQ(e.target.value)}
+              style={{ height: 46, borderRadius: 12, border: '1px solid #c9cfc7', padding: '0 12px', minWidth: 200, fontSize: 16 }} />
+            <button className="btn" style={{ minHeight: 44 }} aria-pressed={cat === 'all'} onClick={() => setCat('all')}>ทั้งหมด {items?.length ?? ''}</button>
+            {cats.map((c) => (
+              <button key={c.id} className="btn" style={{ minHeight: 44 }} aria-pressed={cat === c.id} onClick={() => setCat(c.id)}>
+                {c.name} {items?.filter((i) => i.category_id === c.id).length ?? ''}
+              </button>
+            ))}
+          </div>
           <div className="tbl-wrap">
             <table className="tbl">
               <thead><tr>
-                <th>เมนู</th><th>หมวด</th><th className="num">ราคาขาย</th><th className="num">ก่อน VAT</th>
-                <th className="num">ต้นทุน</th><th className="num">Food cost</th><th className="num">กำไรขั้นต้น</th>
+                <th>เมนู</th><th>หมวด</th><th className="num">ราคาขาย</th><th className="num">ต้นทุน</th><th className="num">Food cost</th><th className="num">กำไรขั้นต้น</th>
               </tr></thead>
               <tbody>
-                {items?.map((i) => (
+                {shown.map((i) => (
                   <tr key={i.id} className="click" onClick={() => setOpen(i)} tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setOpen(i)}>
-                    <td style={{ fontWeight: 600 }}>{i.name}{!i.active && <span className="pill" style={{ marginLeft: 8, background: 'var(--line-soft)' }}>ปิดขาย</span>}</td>
+                    <td style={{ fontWeight: 600 }}>
+                      <span className="row" style={{ gap: 10 }}>
+                        <span style={{ width: 38, height: 38, borderRadius: 8, background: tintFor(i.id), overflow: 'hidden', display: 'grid', placeItems: 'center', flex: 'none' }}>
+                          {i.image_url ? <img src={i.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <BowlIcon size={22} />}
+                        </span>
+                        <span>{i.name}
+                          {!i.active && <span className="pill" style={{ marginLeft: 8, background: 'var(--line-soft)' }}>ปิดขาย</span>}
+                          {i.station === 'bar' && <span className="pill" style={{ marginLeft: 8, background: 'var(--info-soft)', color: 'var(--info-ink)' }}>บาร์</span>}
+                          {i.group_ids?.length > 0 && <span className="muted" style={{ marginLeft: 8, fontSize: 13, fontWeight: 400 }}>{i.group_ids.length} คำถาม</span>}
+                        </span>
+                      </span>
+                    </td>
                     <td className="muted">{i.category ?? '—'}</td>
                     <td className="num">{formatBaht(i.price)}</td>
-                    <td className="num muted">{formatBaht(i.price_ex_vat)}</td>
                     <td className="num">{i.recipe_lines ? formatBaht(i.cost) : <span className="muted">ยังไม่มีสูตร</span>}</td>
                     <td className="num" style={{ fontWeight: 700, color: !i.recipe_lines ? 'var(--muted)' : i.food_cost_pct > TARGET_PCT ? 'var(--warn-ink)' : 'var(--accent-ink)' }}>
                       {i.recipe_lines ? `${i.food_cost_pct}%` : '—'}
@@ -81,167 +107,17 @@ export default function MenuCosting() {
               </tbody>
             </table>
           </div>
+          {items && shown.length === 0 && <p className="muted">{items.length === 0 ? 'ยังไม่มีเมนู — กด “+ เพิ่มเมนู” ได้เลย' : 'ไม่พบเมนูตามที่ค้นหา'}</p>}
           {!items && !err && <p className="muted">กำลังโหลด…</p>}
         </section>
       </main>
-      {open && <RecipeSheet item={open} ings={ings} cats={cats} onClose={() => setOpen(null)} onSaved={() => { setOpen(null); load(); }} />}
+      {(open || adding) && (
+        <ItemSheet item={open} ings={ings} cats={cats} groups={groups} items={items ?? []} vatRatio={vatRatio}
+          onClose={() => { setOpen(null); setAdding(false); }} onSaved={() => { setOpen(null); setAdding(false); load(); }}
+          onIngsChanged={() => api('GET', '/api/ingredients').then(setIngs)} />
+      )}
       {managingCats && <CategorySheet cats={cats} items={items ?? []} onClose={() => { setManagingCats(false); load(); }} onChanged={setCats} />}
-      {adding && <NewItemSheet cats={cats} onClose={() => setAdding(false)} onSaved={() => { setAdding(false); load(); }} />}
     </>
-  );
-}
-
-function RecipeSheet({ item, ings, cats, onClose, onSaved }: { item: any; ings: any[]; cats: any[]; onClose: () => void; onSaved: () => void }) {
-  const [lines, setLines] = useState<Line[] | null>(null);
-  const [price, setPrice] = useState((item.price / 100).toFixed(2));
-  const [active, setActive] = useState<boolean>(item.active);
-  const [categoryId, setCategoryId] = useState<string>(item.category_id ?? '');
-  const [err, setErr] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [image, setImage] = useState<string | null>(item.image_url ?? null);
-  const [photoBusy, setPhotoBusy] = useState(false);
-  const byId = useMemo(() => new Map(ings.map((i) => [i.id, i])), [ings]);
-
-  useEffect(() => {
-    api('GET', `/api/menu/items/${item.id}/recipe`)
-      .then((r) => setLines(r.lines.map((l: any) => ({ ingredientId: l.ingredient_id, qty: String(l.qty) }))))
-      .catch((e) => setErr(errText(e)));
-  }, [item.id]);
-
-  const cost = (lines ?? []).reduce((s, l) => s + lineCost(byId.get(l.ingredientId), Number(l.qty)), 0);
-  // Keep the pre-VAT ratio the server used so a price edit previews the right food cost.
-  const newPrice = toSatang(price);
-  const exVat = item.price > 0 ? Math.round(newPrice * item.price_ex_vat / item.price) : newPrice;
-  const set = (i: number, patch: Partial<Line>) => setLines(lines!.map((l, k) => (k === i ? { ...l, ...patch } : l)));
-  const valid = lines !== null && lines.every((l) => l.ingredientId && Number(l.qty) > 0) && Number.isFinite(newPrice) && newPrice >= 0;
-
-  async function save() {
-    setBusy(true); setErr('');
-    try {
-      await api('PUT', `/api/menu/items/${item.id}/recipe`, { lines: lines!.map((l) => ({ ingredientId: l.ingredientId, qty: Number(l.qty) })) });
-      if (newPrice !== item.price || active !== item.active || categoryId !== (item.category_id ?? '')) {
-        await api('PATCH', `/api/menu/items/${item.id}`, { price: newPrice, active, categoryId: categoryId || null });
-      }
-      onSaved();
-    } catch (e) { setErr(errText(e)); setBusy(false); }
-  }
-
-  async function photo(file: File | undefined) {
-    if (!file) return;
-    setPhotoBusy(true); setErr('');
-    try { setImage((await uploadMenuImage(item.id, file)).image_url); }
-    catch (e) { setErr(errText(e)); }
-    setPhotoBusy(false);
-  }
-  async function removePhoto() {
-    setPhotoBusy(true); setErr('');
-    try { await api('DELETE', `/api/menu/items/${item.id}/image`); setImage(null); }
-    catch (e) { setErr(errText(e)); }
-    setPhotoBusy(false);
-  }
-
-  return (
-    <Sheet title={`สูตร · ${item.name}`} onClose={onClose} wide>
-      <div className="row" style={{ gap: 14 }}>
-        <div style={{ width: 96, height: 96, borderRadius: 12, background: tintFor(item.id), overflow: 'hidden', display: 'grid', placeItems: 'center', flex: 'none' }}>
-          {image ? <img src={image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <BowlIcon />}
-        </div>
-        <label className="btn btn-outline" style={{ cursor: 'pointer' }}>
-          {photoBusy ? 'กำลังอัปโหลด…' : image ? 'เปลี่ยนรูป' : 'เพิ่มรูปเมนู'}
-          <input type="file" accept="image/*" hidden disabled={photoBusy} onChange={(e) => { photo(e.target.files?.[0]); e.target.value = ''; }} />
-        </label>
-        {image && <button className="btn" disabled={photoBusy} onClick={removePhoto}>ลบรูป</button>}
-      </div>
-      <div className="grid-form">
-        <label className="field">ราคาขาย (บาท)<input inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} /></label>
-        <label className="field">หมวด
-          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-            <option value="">ไม่มีหมวด</option>
-            {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </label>
-        <label className="row" style={{ minHeight: 50, alignSelf: 'end', fontSize: 16 }}>
-          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} style={{ width: 24, height: 24, accentColor: 'var(--accent)' }} /> เปิดขาย
-        </label>
-      </div>
-      <div className="muted" style={{ fontSize: 14 }}>ใส่ปริมาณที่ใช้จริงต่อ 1 จาน (หลังตัดแต่ง) ระบบจะคิดส่วนที่เสียจาก yield ของวัตถุดิบให้เอง</div>
-      {lines === null ? <p className="muted">กำลังโหลด…</p> : (
-        <table className="tbl">
-          <thead><tr><th>วัตถุดิบ</th><th className="num">ปริมาณ/จาน</th><th className="num">ต้นทุน</th><th /></tr></thead>
-          <tbody>
-            {lines.map((l, i) => {
-              const ing = byId.get(l.ingredientId);
-              return (
-                <tr key={i}>
-                  <td>
-                    <select aria-label="วัตถุดิบ" value={l.ingredientId} onChange={(e) => set(i, { ingredientId: e.target.value })}
-                      style={{ height: 44, borderRadius: 10, border: '1px solid #c9cfc7', padding: '0 8px', minWidth: 180, background: '#fff' }}>
-                      <option value="">เลือก…</option>
-                      {ings.filter((x) => x.active || x.id === l.ingredientId).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-                    </select>
-                    {ing && ing.yield_pct < 100 && <span className="muted" style={{ fontSize: 13, marginLeft: 8 }}>yield {ing.yield_pct}%</span>}
-                  </td>
-                  <td className="num">
-                    <input aria-label="ปริมาณ" inputMode="decimal" value={l.qty} onChange={(e) => set(i, { qty: e.target.value })}
-                      style={{ width: 90, height: 44, borderRadius: 10, border: '1px solid #c9cfc7', textAlign: 'right', padding: '0 8px' }} />
-                    <span className="muted" style={{ marginLeft: 6, display: 'inline-block', width: 36, textAlign: 'left' }}>{ing ? UNIT[ing.base_unit] : ''}</span>
-                  </td>
-                  <td className="num">{formatBaht(lineCost(ing, Number(l.qty)))}</td>
-                  <td className="num"><button className="btn" style={{ minHeight: 40 }} onClick={() => setLines(lines.filter((_, k) => k !== i))} aria-label="ลบบรรทัด">ลบ</button></td>
-                </tr>
-              );
-            })}
-            <tr className="total">
-              <td>ต้นทุนต่อจาน</td><td />
-              <td className="num">{formatBaht(cost)}</td><td />
-            </tr>
-          </tbody>
-        </table>
-      )}
-      <button className="btn btn-outline" onClick={() => setLines([...(lines ?? []), { ingredientId: '', qty: '' }])}>+ เพิ่มวัตถุดิบ</button>
-      {Number.isFinite(exVat) && exVat > 0 && (
-        <div className="card" style={{ padding: '12px 16px', display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-          <span>ราคาก่อน VAT <b>{formatBaht(exVat)}</b></span>
-          <span>Food cost <b style={{ color: pct(cost, exVat) > TARGET_PCT ? 'var(--warn-ink)' : 'var(--accent-ink)' }}>{pct(cost, exVat)}%</b></span>
-          <span>กำไรขั้นต้น <b>{formatBaht(exVat - cost)}</b></span>
-        </div>
-      )}
-      {err && <div className="error" role="alert">{err}</div>}
-      <button className="btn btn-primary btn-lg" onClick={save} disabled={!valid || busy}>บันทึกสูตร</button>
-    </Sheet>
-  );
-}
-
-function NewItemSheet({ cats, onClose, onSaved }: { cats: any[]; onClose: () => void; onSaved: () => void }) {
-  const [f, setF] = useState({ name: '', categoryId: cats[0]?.id ?? '', price: '', station: 'kitchen' });
-  const [err, setErr] = useState('');
-  const price = toSatang(f.price);
-  async function save() {
-    setErr('');
-    try {
-      await api('POST', '/api/menu/items', { name: f.name, categoryId: f.categoryId || null, price, station: f.station });
-      onSaved();
-    } catch (e) { setErr(errText(e)); }
-  }
-  return (
-    <Sheet title="เพิ่มเมนู" onClose={onClose}>
-      <label className="field">ชื่อเมนู<input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} autoFocus /></label>
-      <label className="field">หมวด
-        <select value={f.categoryId} onChange={(e) => setF({ ...f, categoryId: e.target.value })}>
-          <option value="">ไม่มีหมวด</option>
-          {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-      </label>
-      <label className="field">ราคาขาย (บาท)<input inputMode="decimal" value={f.price} onChange={(e) => setF({ ...f, price: e.target.value })} /></label>
-      <label className="field">ส่งไปที่
-        <select value={f.station} onChange={(e) => setF({ ...f, station: e.target.value })}>
-          <option value="kitchen">ครัว</option><option value="bar">บาร์น้ำ</option>
-        </select>
-      </label>
-      {err && <div className="error" role="alert">{err}</div>}
-      <button className="btn btn-primary btn-lg" onClick={save} disabled={!f.name.trim() || !Number.isFinite(price) || price < 0}>เพิ่มเมนู</button>
-      <p className="muted" style={{ margin: 0, fontSize: 14 }}>เพิ่มแล้วแตะเมนูในตารางเพื่อใส่สูตร</p>
-    </Sheet>
   );
 }
 

@@ -129,3 +129,7 @@ button, a, input, select { touch-action: manipulation; }
   .order-aside { height: 58dvh; }
   .order-lines { flex: 1 0 168px !important; overflow: visible !important; }
 }
+
+/* Search lists in side panels (ingredient picker etc.) */
+.pick-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 6px 10px; border: 0; border-bottom: 1px solid var(--line-soft); background: transparent; border-radius: 8px; }
+.pick-row:hover, .pick-row:focus-visible { background: var(--accent-soft); }

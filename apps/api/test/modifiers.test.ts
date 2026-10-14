@@ -120,4 +120,18 @@ describe('menu options', () => {
     expect((await other.call('PUT', `/api/modifier-groups/${spice.id}`, { name: 'x', options: [{ name: 'a' }] })).status).toBe(404);
     expect((await s.call('POST', '/api/modifier-groups', { name: 'x', minSelect: 3, maxSelect: 1, options: [{ name: 'a' }] })).status).toBe(400);
   });
+
+  it("sets a dish's questions from the dish editor, and lists them in costing", async () => {
+    const { s, spice, top } = await shopWithOptions();
+    const rice = s.item("ข้าวผัดกุ้ง");
+    const set = (groupIds: string[]) => s.call("PUT", "/api/menu/items/" + rice + "/modifier-groups", { groupIds });
+    expect((await set([top.id])).status).toBe(200);
+    const row = (await s.call("GET", "/api/costing/menu")).body.find((i: any) => i.id === rice);
+    expect(row.group_ids).toEqual([top.id]);
+    expect(row.station).toBe("kitchen");
+    expect((await set([top.id, spice.id])).status).toBe(200);
+    expect((await set([])).status).toBe(200);
+    expect((await s.call("GET", "/api/menu")).body.items.find((i: any) => i.id === rice).group_ids).toEqual([]);
+    expect((await set(["00000000-0000-4000-8000-000000000000"])).status).toBe(400);
+  });
 });

@@ -8,7 +8,7 @@ interface Row { id: string; name: string; seats: number; order_id: string | null
 const small: React.CSSProperties = { height: 44, borderRadius: 10, border: '1px solid #c9cfc7', padding: '0 10px', fontSize: 16, background: '#fff' };
 
 /** Floor plan: how many tables, their names and seats. Saved per action, separate from the tax settings. */
-export function TablesSection({ canEdit }: { canEdit: boolean }) {
+export function TablesSection({ canEdit, bare, onChanged }: { canEdit: boolean; bare?: boolean; onChanged?: () => void }) {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [edit, setEdit] = useState<Record<string, { name: string; seats: string }>>({});
   const [count, setCount] = useState('');
@@ -25,7 +25,7 @@ export function TablesSection({ canEdit }: { canEdit: boolean }) {
 
   async function run(fn: () => Promise<unknown>, done: string) {
     setErr(''); setMsg('');
-    try { await fn(); await load(); setMsg(done); } catch (e) { setErr(errText(e)); }
+    try { await fn(); await load(); setMsg(done); onChanged?.(); } catch (e) { setErr(errText(e)); }
   }
 
   const n = Number(count);
@@ -34,7 +34,7 @@ export function TablesSection({ canEdit }: { canEdit: boolean }) {
   const busy = rows?.filter((t) => t.order_id).length ?? 0;
 
   return (
-    <section className="card" style={{ padding: 18, display: 'grid', gap: 14 }} aria-labelledby="tables-h">
+    <section className={bare ? undefined : 'card'} style={{ padding: bare ? 0 : 18, display: 'grid', gap: 14 }} aria-labelledby="tables-h">
       <div className="row" style={{ flexWrap: 'wrap' }}>
         <h2 id="tables-h" style={{ margin: 0, fontSize: 20 }}>โต๊ะในร้าน</h2>
         <span className="muted" style={{ fontSize: 14 }}>{rows ? `${rows.length} โต๊ะ · มีลูกค้า ${busy}` : 'กำลังโหลด…'}</span>

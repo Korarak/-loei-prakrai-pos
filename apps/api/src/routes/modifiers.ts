@@ -109,4 +109,24 @@ export async function modifierRoutes(app: FastifyInstance, ctx: Ctx) {
     const b = Group.parse(req.body);
     return withTenant(ctx.db, req.session.tenantId, (c) => save(c, req.session.userId, id, b));
   });
+
+  // From the dish editor: which option groups does this dish ask? (The group editor does the reverse.)
+  app.put('/api/menu/items/:id/modifier-groups', { preHandler: manager }, async (req) => {
+    const { id } = Id.parse(req.params);
+    const { groupIds } = z.object({ groupIds: z.array(z.string().uuid()).max(30) }).parse(req.body);
+    const ids = [...new Set(groupIds)];
+    return withTenant(ctx.db, req.session.tenantId, async (c) => {
+      if (!(await one(c, `SELECT 1 FROM menu_items WHERE id = $1`, [id]))) throw new HttpError(404, 'not_found');
+      if (ids.length) {
+        const n = await one(c, `SELECT count(*)::int AS n FROM modifier_groups WHERE id = ANY($1::uuid[])`, [ids]);
+        if (n.n !== ids.length) throw new HttpError(400, 'group_not_found');
+      }
+      await c.query(`DELETE FROM menu_item_modifier_groups WHERE menu_item_id = $1`, [id]);
+      for (const [i, gid] of ids.entries()) {
+        await c.query(`INSERT INTO menu_item_modifier_groups (menu_item_id, group_id, sort) VALUES ($1, $2, $3)`, [id, gid, i]);
+      }
+      await audit(c, req.session.userId, 'menu.options', 'menu_item', id, { groups: ids.length });
+      return { groupIds: ids };
+    });
+  });
 }
