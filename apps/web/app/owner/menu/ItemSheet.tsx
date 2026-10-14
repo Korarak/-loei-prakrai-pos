@@ -104,7 +104,7 @@ export function ItemSheet({ item, ings, cats, groups, items, vatRatio, onClose, 
   return (
     <>
       <Sheet title={item ? `แก้เมนู · ${item.name}` : 'เพิ่มเมนูใหม่'} onClose={onClose} wide>
-        <H n={1} hint="ชื่อ รูป ราคา และส่งไปที่ครัวหรือบาร์">ข้อมูลเมนู</H>
+        <H n={1}>ข้อมูลเมนู</H>
         <div className="row" style={{ gap: 14, alignItems: 'flex-start' }}>
           <div style={{ display: 'grid', gap: 8, justifyItems: 'center' }}>
             <div style={{ width: 96, height: 96, borderRadius: 12, background: tintFor(id ?? 'new'), overflow: 'hidden', display: 'grid', placeItems: 'center' }}>
@@ -141,7 +141,7 @@ export function ItemSheet({ item, ings, cats, groups, items, vatRatio, onClose, 
           </label>
         </div>
 
-        <H n={2} hint="ถ้าเมนูนี้ต้องถามลูกค้า เช่น ความสุก ระดับเผ็ด ท็อปปิ้ง แตะเลือกกลุ่มที่ต้องการ (ไม่มีก็ข้ามได้)">คำถามตอนสั่ง</H>
+        <H n={2}>ตัวเลือกตอนสั่ง</H>
         <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
           {groups.filter((g) => g.active || groupIds.includes(g.id)).map((g) => (
             <button key={g.id} className="btn" aria-pressed={groupIds.includes(g.id)} onClick={() => toggleGroup(g.id)}>
@@ -150,9 +150,8 @@ export function ItemSheet({ item, ings, cats, groups, items, vatRatio, onClose, 
           ))}
           {groups.length === 0 && <span className="muted">ยังไม่มีกลุ่มตัวเลือก — สร้างได้ที่แท็บ “ตัวเลือกเมนู”</span>}
         </div>
-        {groups.some((g) => g.min_select > 0) && <div className="muted" style={{ fontSize: 13 }}>* = ลูกค้าต้องเลือก</div>}
 
-        <H n={3} hint="ใส่ปริมาณที่ใช้จริงต่อ 1 จาน ระบบคิดต้นทุนและตัดสต็อกให้ตอนขาย (ข้ามไปก่อนได้ มาใส่ทีหลังก็ได้)">สูตร / ต้นทุน</H>
+        <H n={3} hint="ปริมาณต่อ 1 จาน (ข้ามได้)">สูตร / ต้นทุน</H>
         {lines === null ? <p className="muted">กำลังโหลด…</p> : (
           <div style={{ display: 'grid', gap: 8 }}>
             {rows.map((l, i) => {
@@ -170,7 +169,7 @@ export function ItemSheet({ item, ings, cats, groups, items, vatRatio, onClose, 
                   </span>
                   <span style={{ width: 70, textAlign: 'right', fontWeight: 600 }}>{ing ? formatBaht(lineCost(ing, Number(l.qty))) : ''}</span>
                   <button className="btn" style={{ minHeight: 40, padding: '0 12px' }} aria-label="ลบบรรทัด" onClick={() => setLines(rows.filter((_, k) => k !== i))}>✕</button>
-                  {ing && ing.yield_pct < 100 && <span className="muted" style={{ fontSize: 12, flexBasis: '100%' }}>รวมส่วนที่เสียจากการตัดแต่งแล้ว (yield {ing.yield_pct}%)</span>}
+                  {ing && ing.yield_pct < 100 && <span className="muted" style={{ fontSize: 12, flexBasis: '100%' }}>yield {ing.yield_pct}%</span>}
                 </div>
               );
             })}
@@ -189,7 +188,7 @@ export function ItemSheet({ item, ings, cats, groups, items, vatRatio, onClose, 
               <span>กำไรขั้นต้น <b>{formatBaht(exVat - cost)}</b></span>
             </>
           )}
-          {rows.length === 0 && <span className="muted">ยังไม่มีสูตร — เมนูขายได้ แต่จะยังไม่ตัดสต็อกและไม่รู้กำไร</span>}
+          {rows.length === 0 && <span className="muted">ยังไม่มีสูตร</span>}
         </div>
         {err && <div className="error" role="alert">{err}</div>}
         <button className="btn btn-primary btn-lg" onClick={save} disabled={!valid || busy}>

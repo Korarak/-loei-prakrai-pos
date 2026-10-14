@@ -60,7 +60,7 @@ export default function MenuCosting() {
         <section className="card" style={{ padding: '12px 18px', display: 'grid', gap: 10 }}>
           <div className="row" style={{ flexWrap: 'wrap' }}>
             <h1 style={{ margin: 0, fontSize: 20 }}>เมนูและต้นทุน</h1>
-            <span className="muted" style={{ fontSize: 14 }}>แตะเมนูเพื่อแก้ราคา สูตร รูป และตัวเลือก · ต้นทุนคิดจากราคาก่อน VAT</span>
+            <span className="muted" style={{ fontSize: 14 }}>แตะเมนูเพื่อแก้</span>
             <span className="spacer" />
             <button className="btn" onClick={() => setManagingCats(true)}>จัดการหมวด</button>
             <button className="btn btn-primary" onClick={() => setAdding(true)}>+ เพิ่มเมนู</button>

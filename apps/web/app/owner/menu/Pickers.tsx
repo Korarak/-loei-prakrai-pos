@@ -88,7 +88,7 @@ export function NewIngredientSheet({ onClose, onCreated, initialName = '' }: { o
     <Sheet title="สร้างวัตถุดิบใหม่" onClose={onClose}>
       <label className="field">ชื่อวัตถุดิบ<input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} autoFocus placeholder="เช่น สันนอกเนื้อ, เบียร์สิงห์ขวดใหญ่" /></label>
       <div>
-        <div className="muted" style={{ fontSize: 14, marginBottom: 6 }}>ซื้อมาเป็นหน่วยอะไร (เลือกแบบที่ใกล้เคียงที่สุด)</div>
+        <div className="muted" style={{ fontSize: 14, marginBottom: 6 }}>ซื้อเป็นหน่วยอะไร</div>
         <div className="row" style={{ flexWrap: 'wrap' }}>
           {PRESETS.map((p) => (
             <button key={p.label} className="btn" aria-pressed={f.unit === p.unit && f.base === p.base} onClick={() => setF({ ...f, base: p.base, unit: p.unit, factor: p.factor })}>{p.label}</button>
@@ -106,7 +106,6 @@ export function NewIngredientSheet({ onClose, onCreated, initialName = '' }: { o
       </div>
       {err && <div className="error" role="alert">{err}</div>}
       <button className="btn btn-primary btn-lg" onClick={save} disabled={!ok || busy}>{busy ? 'กำลังบันทึก…' : 'สร้างและใช้เลย'}</button>
-      <p className="muted" style={{ margin: 0, fontSize: 14 }}>ราคานี้เป็นต้นทุนเริ่มต้น พอบันทึกใบรับของ ระบบจะคิดต้นทุนเฉลี่ยให้เอง</p>
     </Sheet>
   );
 }
