@@ -42,7 +42,7 @@ describe('platform admin: reviewing sign-ups', () => {
     const op = await operator();
     const found = (await op('GET', `/api/platform/tenants?q=${encodeURIComponent(shop.email)}`)).body;
     expect(found.total).toBe(1);
-    expect(found.rows[0]).toMatchObject({ id: shop.tenantId, status: 'trial', owner_email: shop.email, members: 1 });
+    expect(found.rows[0]).toMatchObject({ id: shop.tenantId, status: 'active', owner_email: shop.email, members: 1 });
     expect((await op('GET', `/api/platform/tenants?q=${encodeURIComponent(shop.email)}&status=suspended`)).body.total).toBe(0);
     expect((await op('GET', '/api/platform/tenants?status=nonsense')).status).toBe(400);
     const ov = (await op('GET', '/api/platform/overview')).body;
@@ -79,17 +79,16 @@ describe('platform admin: reviewing sign-ups', () => {
     const token = again.json().token as string;
     const log = (await as(token)('GET', '/api/audit?action=platform')).body;
     expect(log.rows.map((x: any) => x.action)).toEqual(['platform.tenant.update', 'platform.tenant.update']);
-    expect(log.rows[1].detail.before.status).toBe('trial');
+    expect(log.rows[1].detail.before.status).toBe('active');
   });
 
-  it('trial date and note can be changed, and cleared', async () => {
+  it('admin note can be set and cleared', async () => {
     const shop = await newShop(app);
     const op = await operator();
-    const r = await op('PATCH', `/api/platform/tenants/${shop.tenantId}`, { trialEndsAt: '2030-01-31', adminNote: 'x' });
-    expect(r.body.trial_ends_at).toBe('2030-01-31');
+    const r = await op('PATCH', `/api/platform/tenants/${shop.tenantId}`, { adminNote: 'x' });
+    expect(r.body.admin_note).toBe('x');
     const c = await op('PATCH', `/api/platform/tenants/${shop.tenantId}`, { adminNote: null });
     expect(c.body.admin_note).toBeNull();
-    expect(c.body.trial_ends_at).toBe('2030-01-31');
   });
 
   it('unlocks a locked-out owner', async () => {

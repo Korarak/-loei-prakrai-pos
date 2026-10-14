@@ -8,7 +8,6 @@ import { useMe } from '@/lib/useMe';
 import { TopBar } from '../pos/TopBar';
 
 const STATUS: Record<string, { label: string; bg: string; fg: string }> = {
-  trial: { label: 'ทดลองใช้', bg: 'var(--info-soft)', fg: 'var(--info-ink)' },
   active: { label: 'ใช้งานจริง', bg: 'var(--accent-soft)', fg: 'var(--accent-ink)' },
   pending: { label: 'รอตรวจสอบ', bg: 'var(--warn-soft)', fg: 'var(--warn-ink)' },
   suspended: { label: 'ระงับ', bg: '#fde8e8', fg: '#9b1c1c' },
@@ -33,7 +32,7 @@ const Pill = ({ s }: { s: string }) => {
 };
 
 interface Row {
-  id: string; name: string; status: string; trial_ends_at: string | null; created_at: string; tax_id: string | null; vat_registered: boolean;
+  id: string; name: string; status: string; created_at: string; tax_id: string | null; vat_registered: boolean;
   admin_note: string | null; members: number; owner_name: string | null; owner_email: string | null; owner_phone: string | null; last_login_at: string | null;
 }
 
@@ -76,7 +75,6 @@ export default function Platform() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
             <Stat label="สมัครใหม่ 7 วัน" value={overview.signups_7d} tone="good" />
             <Stat label="สมัครใหม่ 30 วัน" value={overview.signups_30d} />
-            <Stat label="ทดลองใช้ (หมดใน 7 วัน)" value={`${count('trial')} (${overview.trial_ending})`} tone={overview.trial_ending ? 'warn' : undefined} />
             <Stat label="ใช้งานจริง" value={count('active')} />
             <Stat label="รอตรวจ / ระงับ" value={`${count('pending')} / ${count('suspended')}`} tone={count('pending') ? 'warn' : undefined} />
             <Stat label="บัญชีที่ถูกล็อกอยู่" value={overview.lockedUsers} tone={overview.lockedUsers ? 'warn' : undefined} />
@@ -103,7 +101,6 @@ export default function Platform() {
                     <td>{r.owner_name}<div className="muted" style={{ fontSize: 12 }}>{r.owner_email}{r.owner_phone ? ` · ${r.owner_phone}` : ''}</div></td>
                     <td><Pill s={r.status} /></td>
                     <td>{when(r.created_at)}</td>
-                    <td>{day(r.trial_ends_at)}</td>
                     <td>{ago(r.last_login_at)}</td>
                     <td className="num">{r.members}</td>
                   </tr>
@@ -123,12 +120,11 @@ export default function Platform() {
 function Detail({ id, onClose, onChanged }: { id: string; onClose: () => void; onChanged: () => void }) {
   const [d, setD] = useState<any>(null);
   const [note, setNote] = useState('');
-  const [trial, setTrial] = useState('');
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
 
   const load = useCallback(() => api('GET', `/api/platform/tenants/${id}`).then((x) => {
-    setD(x); setNote(x.tenant.admin_note ?? ''); setTrial(x.tenant.trial_ends_at?.slice(0, 10) ?? '');
+    setD(x); setNote(x.tenant.admin_note ?? '');
   }).catch((e) => setErr(errText(e))), [id]);
   useEffect(() => { load(); }, [load]);
 
@@ -167,14 +163,8 @@ function Detail({ id, onClose, onChanged }: { id: string; onClose: () => void; o
 
         <h3 style={{ margin: '8px 0 0' }}>สถานะ</h3>
         <div className="row" style={{ flexWrap: 'wrap' }}>
-          <Btn to="trial" label="ทดลองใช้" /><Btn to="active" label="ใช้งานจริง" /><Btn to="pending" label="รอตรวจสอบ" />
+          <Btn to="active" label="ใช้งาน" /><Btn to="pending" label="รอตรวจสอบ" />
           <Btn to="suspended" label="ระงับ" tone="warn" /><Btn to="closed" label="ปิดร้าน" tone="warn" />
-        </div>
-        <div className="row" style={{ flexWrap: 'wrap', alignItems: 'end' }}>
-          <label className="field">ทดลองใช้ถึง
-            <input type="date" value={trial} onChange={(e) => setTrial(e.target.value)} /></label>
-          <button className="btn" onClick={() => patch({ trialEndsAt: trial || null }, 'บันทึกวันสิ้นสุดทดลองแล้ว')}>บันทึกวัน</button>
-          <button className="btn" onClick={() => { const x = new Date((trial ? new Date(`${trial}T12:00:00Z`) : new Date()).getTime() + 30 * 86400_000).toISOString().slice(0, 10); setTrial(x); patch({ trialEndsAt: x }, 'ต่อทดลองอีก 30 วันแล้ว'); }}>ต่อ 30 วัน</button>
         </div>
 
         <h3 style={{ margin: '8px 0 0' }}>หมายเหตุภายใน <span className="muted" style={{ fontSize: 13, fontWeight: 400 }}>(ร้านไม่เห็น)</span></h3>

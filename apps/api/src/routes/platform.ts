@@ -5,7 +5,7 @@ import { HttpError } from '../auth.ts';
 import { audit, many, one, withPlatform, withTenant } from '../db.ts';
 
 const Id = z.object({ id: z.string().uuid() });
-const STATUSES = ['trial', 'active', 'pending', 'suspended', 'closed'] as const;
+const STATUSES = ['active', 'pending', 'suspended', 'closed'] as const;
 const List = z.object({
   q: z.string().trim().max(100).optional(),
   status: z.enum(STATUSES).optional(),
@@ -14,7 +14,6 @@ const List = z.object({
 });
 const Patch = z.object({
   status: z.enum(STATUSES).optional(),
-  trialEndsAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   adminNote: z.string().trim().max(1000).nullable().optional(),
 });
 
@@ -37,8 +36,7 @@ export async function platformRoutes(app: FastifyInstance, ctx: Ctx) {
       const byStatus = await many(c, `SELECT status, count(*)::int AS n FROM tenants GROUP BY status`);
       const r = await one(c, `SELECT
           count(*) FILTER (WHERE created_at > now() - interval '7 days')::int AS signups_7d,
-          count(*) FILTER (WHERE created_at > now() - interval '30 days')::int AS signups_30d,
-          count(*) FILTER (WHERE status = 'trial' AND trial_ends_at <= (now() + interval '7 days')::date)::int AS trial_ending
+          count(*) FILTER (WHERE created_at > now() - interval '30 days')::int AS signups_30d
         FROM tenants`);
       const locked = await one(c, `SELECT count(*)::int AS n FROM users WHERE login_locked_until > now()`);
       return { byStatus, ...r, lockedUsers: locked.n };
@@ -49,7 +47,7 @@ export async function platformRoutes(app: FastifyInstance, ctx: Ctx) {
     const like = q.q ? `%${q.q.replace(/[%_\\]/g, '\\$&')}%` : null;
     return withPlatform(ctx.db, async (c) => {
       const rows = await many(c, `
-        SELECT t.id, t.name, t.status, t.trial_ends_at, t.created_at, t.tax_id, t.vat_registered, t.admin_note,
+        SELECT t.id, t.name, t.status, t.created_at, t.tax_id, t.vat_registered, t.admin_note,
                (SELECT count(*)::int FROM tenant_members m WHERE m.tenant_id = t.id AND m.active) AS members,
                o.name AS owner_name, o.email AS owner_email, o.phone AS owner_phone, o.last_login_at
           FROM tenants t ${OWNER_JOIN}
@@ -63,7 +61,7 @@ export async function platformRoutes(app: FastifyInstance, ctx: Ctx) {
   app.get('/api/platform/tenants/:id', { preHandler: only }, async (req) => {
     const { id } = Id.parse(req.params);
     const { tenant, members } = await withPlatform(ctx.db, async (c) => {
-      const t = await one(c, `SELECT id, name, slug, status, trial_ends_at, legal_name, tax_id, address, vat_registered,
+      const t = await one(c, `SELECT id, name, slug, status, legal_name, tax_id, address, vat_registered,
                                      admin_note, status_changed_at, created_at FROM tenants WHERE id = $1`, [id]);
       if (!t) throw new HttpError(404, 'not_found');
       const m = await many(c, `SELECT u.id AS user_id, u.name, u.email, u.phone, u.last_login_at, m.role, m.active,
@@ -88,19 +86,18 @@ export async function platformRoutes(app: FastifyInstance, ctx: Ctx) {
     const { id } = Id.parse(req.params);
     const b = Patch.parse(req.body);
     const out = await withPlatform(ctx.db, async (c) => {
-      const before = await one(c, `SELECT status, trial_ends_at, admin_note FROM tenants WHERE id = $1 FOR UPDATE`, [id]);
+      const before = await one(c, `SELECT status, admin_note FROM tenants WHERE id = $1 FOR UPDATE`, [id]);
       if (!before) throw new HttpError(404, 'not_found');
       const after = await one(c, `UPDATE tenants SET
             status = coalesce($2, status),
             status_changed_at = CASE WHEN $2::text IS NOT NULL AND $2 <> status THEN now() ELSE status_changed_at END,
-            trial_ends_at = CASE WHEN $3::boolean THEN $4::date ELSE trial_ends_at END,
-            admin_note = CASE WHEN $5::boolean THEN $6 ELSE admin_note END
-          WHERE id = $1 RETURNING id, name, status, trial_ends_at, admin_note, status_changed_at`,
-        [id, b.status ?? null, b.trialEndsAt !== undefined, b.trialEndsAt ?? null, b.adminNote !== undefined, b.adminNote ?? null]);
+            admin_note = CASE WHEN $3::boolean THEN $4 ELSE admin_note END
+          WHERE id = $1 RETURNING id, name, status, admin_note, status_changed_at`,
+        [id, b.status ?? null, b.adminNote !== undefined, b.adminNote ?? null]);
       return { before, after };
     });
     await withTenant(ctx.db, id, (c) => audit(c, req.session.userId, 'platform.tenant.update', 'tenant', id,
-      { before: out.before, after: { status: out.after.status, trial_ends_at: out.after.trial_ends_at } }));
+      { before: out.before, after: { status: out.after.status } }));
     return out.after;
   });
 

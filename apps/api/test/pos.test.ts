@@ -13,7 +13,7 @@ describe('auth', () => {
     const s = await newShop(app, { vat: false, posId: null });
     const me = (await s.call('GET', '/api/me')).body;
     expect(me.role).toBe('owner');
-    expect(me.tenant.status).toBe('trial');
+    expect(me.tenant.status).toBe('active');
     expect(me.terminals).toHaveLength(1);
     expect(s.tables).toHaveLength(5);
   });

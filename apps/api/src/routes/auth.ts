@@ -46,7 +46,6 @@ export async function authRoutes(app: FastifyInstance, ctx: Ctx) {
   app.post('/api/auth/signup', async (req, reply) => {
     const b = Signup.parse(req.body);
     const passwordHash = await hashSecret(b.password);
-    const trialEnds = new Date(Date.now() + 30 * 86400_000).toISOString().slice(0, 10);
 
     const { userId, tenantId } = await withPlatform(ctx.db, async (c) => {
       const exists = await one(c, `SELECT 1 FROM users WHERE email = $1`, [b.email]);
@@ -55,8 +54,8 @@ export async function authRoutes(app: FastifyInstance, ctx: Ctx) {
         `INSERT INTO users (email, phone, name, password_hash, last_login_at) VALUES ($1, $2, $3, $4, now()) RETURNING id`,
         [b.email, b.phone ?? null, b.name, passwordHash]);
       const t = await one<{ id: string }>(c,
-        `INSERT INTO tenants (name, slug, trial_ends_at) VALUES ($1, $2, $3) RETURNING id`,
-        [b.shopName, 'r-' + randomBytes(4).toString('hex'), trialEnds]);
+        `INSERT INTO tenants (name, slug) VALUES ($1, $2) RETURNING id`,
+        [b.shopName, 'r-' + randomBytes(4).toString('hex')]);
       await c.query(`INSERT INTO tenant_members (tenant_id, user_id, role) VALUES ($1, $2, 'owner')`, [t!.id, u!.id]);
       return { userId: u!.id, tenantId: t!.id };
     });
@@ -208,7 +207,7 @@ export async function authRoutes(app: FastifyInstance, ctx: Ctx) {
     const s = req.session;
     const [user, tenant] = await withPlatform(ctx.db, (c) => Promise.all([
       one(c, `SELECT id, name, email FROM users WHERE id = $1`, [s.userId]),
-      one(c, `SELECT id, name, status, trial_ends_at, legal_name, tax_id, address, vat_registered, vat_registered_at,
+      one(c, `SELECT id, name, status, legal_name, tax_id, address, vat_registered, vat_registered_at,
                      price_includes_vat, service_charge_bp, cash_rounding, promptpay_id FROM tenants WHERE id = $1`, [s.tenantId]),
     ]));
     const [branches, terminals] = await withTenant(ctx.db, s.tenantId, (c) => Promise.all([
