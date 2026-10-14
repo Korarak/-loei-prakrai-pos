@@ -5,7 +5,7 @@ import './landing.css';
 import { OpenApp } from './OpenApp';
 
 const TITLE = 'ประกาย POS ระบบขายหน้าร้านอาหาร รู้ต้นทุนทุกจาน ออกใบกำกับภาษีถูกต้อง';
-const DESC = 'POS สำหรับร้านอาหารไทย รับออเดอร์ที่โต๊ะบนแท็บเล็ต ส่งครัวและบาร์ คิดต้นทุนต่อจานจากสูตร ตัดสต็อกอัตโนมัติ ออกใบกำกับภาษีอย่างย่อและเต็มรูป พร้อมรายงานภาษี ทดลองใช้ฟรี 30 วัน';
+const DESC = 'POS สำหรับร้านอาหารไทย รับออเดอร์ที่โต๊ะบนแท็บเล็ต ส่งครัวและบาร์ คิดต้นทุนต่อจานจากสูตร ตัดสต็อกอัตโนมัติ ออกใบกำกับภาษีอย่างย่อและเต็มรูป พร้อมรายงานภาษี';
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -49,7 +49,7 @@ const FAQ: Array<[string, string]> = [
   ['ต้องใช้อุปกรณ์อะไร', 'แท็บเล็ต มือถือ หรือคอมที่มีเน็ต ไม่ต้องติดตั้งโปรแกรม'],
   ['ร้านที่ไม่จด VAT ใช้ได้ไหม', 'ได้ ระบบออกใบเสร็จรับเงินให้ จด VAT แล้วค่อยเปิดโหมดใบกำกับภาษี'],
   ['ขายตอนเน็ตหลุดได้ไหม', 'ยังไม่ได้ ต้องออนไลน์ แนะนำมีฮอตสปอตสำรอง'],
-  ['ทดลองฟรีทำอย่างไร', 'สมัครด้วยอีเมล ไม่ต้องใส่บัตร ใช้ฟรี 30 วัน'],
+  ['เริ่มใช้งานอย่างไร', 'สมัครด้วยอีเมล เลือกแม่แบบร้าน แล้วเปิดขายได้เลย'],
 ];
 
 const JSON_LD = {
@@ -59,7 +59,6 @@ const JSON_LD = {
   applicationCategory: 'BusinessApplication',
   operatingSystem: 'Web',
   description: DESC,
-  offers: { '@type': 'Offer', price: '0', priceCurrency: 'THB', description: 'ทดลองใช้ฟรี 30 วัน' },
 };
 
 function Check() {
@@ -93,10 +92,10 @@ export default function Landing() {
               <h1 className="lp-rise d1">ขายง่ายที่หน้าร้าน<br />รู้<em>ต้นทุนทุกจาน</em><br />ภาษีถูกต้องทุกบิล</h1>
               <p className="lp-sub lp-rise d2">POS ร้านอาหารบนแท็บเล็ต ครบในที่เดียว</p>
               <div className="lp-actions lp-rise d3">
-                <Link href="/signup" className="lp-btn lp-btn-gold">ทดลองใช้ฟรี 30 วัน</Link>
+                <Link href="/signup" className="lp-btn lp-btn-gold">สมัครใช้งาน</Link>
                 <a href="#features" className="lp-btn lp-btn-ghost">ดูว่าทำอะไรได้บ้าง</a>
               </div>
-              <p className="lp-rise d3" style={{ marginTop: 18, color: '#cfe3d8', fontSize: 15 }}>สมัครด้วยอีเมล ไม่ต้องใส่บัตร</p>
+              <p className="lp-rise d3" style={{ marginTop: 18, color: '#cfe3d8', fontSize: 15 }}>สมัครด้วยอีเมล เลือกแม่แบบร้าน เปิดขายได้เลย</p>
             </div>
 
             {/* Decorative preview drawn in CSS; not a real screenshot */}

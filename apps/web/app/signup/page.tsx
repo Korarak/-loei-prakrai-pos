@@ -34,7 +34,7 @@ export default function Signup() {
       <aside style={{ width: 380, background: 'var(--accent-soft)', padding: 40, display: 'flex', flexDirection: 'column', gap: 20 }} className="no-print">
         <div className="brand"><Sparkle /> prakai-pos</div>
         <h1 style={{ fontSize: 30, margin: 0 }}>เปิดร้านกับเรา</h1>
-        <p style={{ color: '#1F4F37', lineHeight: 1.6 }}>ทดลองใช้ฟรี 30 วัน เริ่มจากเมนูตัวอย่าง แก้ชื่อและราคาได้ภายหลัง ตั้งค่า VAT ได้ในหน้าตั้งค่าร้าน</p>
+        <p style={{ color: '#1F4F37', lineHeight: 1.6 }}>เริ่มจากเมนูตัวอย่าง แก้ชื่อและราคาได้ภายหลัง ตั้งค่า VAT ได้ในหน้าตั้งค่าร้าน</p>
       </aside>
       <form onSubmit={submit} style={{ flex: 1, padding: '48px 64px', display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 760 }}>
         <h2 style={{ fontSize: 28, margin: 0 }} className="display">สร้างบัญชีเจ้าของร้าน</h2>

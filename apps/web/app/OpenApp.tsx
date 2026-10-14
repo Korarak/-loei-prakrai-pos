@@ -17,7 +17,7 @@ export function OpenApp() {
   return (
     <>
       <Link href="/login" className="lp-btn lp-btn-line">เข้าสู่ระบบ</Link>
-      <Link href="/signup" className="lp-btn lp-btn-primary">ทดลองใช้ฟรี</Link>
+      <Link href="/signup" className="lp-btn lp-btn-primary">สมัครใช้งาน</Link>
     </>
   );
 }
