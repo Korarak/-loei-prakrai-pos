@@ -4,6 +4,8 @@ import { formatBaht } from '@prakai/core';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
+import { useConfirm } from '@/lib/dialog';
+import { Icon } from '@/lib/icons';
 
 type Mode = 'move' | 'merge' | 'split';
 interface TableRow { id: string; name: string; seats: number; order_id: string | null; amount: number }
@@ -13,6 +15,7 @@ const TITLE: Record<Mode, string> = { move: 'ย้ายไปโต๊ะ', me
 
 /** ย้ายโต๊ะ · รวมโต๊ะ · แยกบิล for one open bill. */
 export function TableOps({ orderId, tableId, lines, onDone }: { orderId: string; tableId: string | null; lines: Line[]; onDone: () => void }) {
+  const confirm = useConfirm();
   const router = useRouter();
   const [mode, setMode] = useState<Mode | null>(null);
   const [tables, setTables] = useState<TableRow[]>([]);
@@ -50,9 +53,12 @@ export function TableOps({ orderId, tableId, lines, onDone }: { orderId: string;
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))', gap: 8 }}>
               {choices.map((t) => (
                 <button key={t.id} className="btn" style={{ minHeight: 64, flexDirection: 'column', gap: 2 }}
-                  onClick={() => run(() => mode === 'move'
-                    ? api('POST', `/api/orders/${orderId}/move`, { tableId: t.id })
-                    : api('POST', `/api/orders/${orderId}/merge`, { fromOrderId: t.order_id }))}>
+                  onClick={async () => {
+                    if (mode === 'merge' && !(await confirm({ title: `รวมบิลโต๊ะ ${t.name} เข้ามา?`, body: 'รวมแล้วแยกกลับเป็นบิลเดิมไม่ได้', confirm: 'รวมบิล', icon: 'table' }))) return;
+                    run(() => mode === 'move'
+                      ? api('POST', `/api/orders/${orderId}/move`, { tableId: t.id })
+                      : api('POST', `/api/orders/${orderId}/merge`, { fromOrderId: t.order_id }));
+                  }}>
                   <b style={{ fontSize: 20 }}>{t.name}</b>
                   <span className="muted" style={{ fontSize: 12 }}>{mode === 'move' ? `${t.seats} ที่นั่ง` : `฿${formatBaht(t.amount)}`}</span>
                 </button>
@@ -69,7 +75,7 @@ export function TableOps({ orderId, tableId, lines, onDone }: { orderId: string;
                   <span style={{ flex: 1 }}>{l.name}{l.note ? ` · ${l.note}` : ''} <span className="muted">(มี {l.qty})</span></span>
                   <button className="btn" style={{ minWidth: 40, minHeight: 40 }} aria-label={`แยก ${l.name} น้อยลง`} onClick={() => set(q - 1)}>−</button>
                   <b style={{ width: 24, textAlign: 'center' }}>{q}</b>
-                  <button className="btn" style={{ minWidth: 40, minHeight: 40 }} aria-label={`แยก ${l.name} มากขึ้น`} onClick={() => set(q + 1)}>+</button>
+                  <button className="btn" style={{ minWidth: 40, minHeight: 40 }} aria-label={`แยก ${l.name} มากขึ้น`} onClick={() => set(q + 1)}><Icon name="plus" /> </button>
                 </div>
               );
             })}
@@ -81,7 +87,7 @@ export function TableOps({ orderId, tableId, lines, onDone }: { orderId: string;
                   router.push(`/pos/order/${child.id}`);
                 } catch (e) { setErr(errText(e)); }
               }}>
-              สร้างบิลแยก{picked.length ? ` ฿${formatBaht(pickedTotal)}` : ''}
+              <Icon name="plus" /> สร้างบิลแยก{picked.length ? ` ฿${formatBaht(pickedTotal)}` : ''}
             </button>
           </>}
           {err && <div className="error" role="alert">{err}</div>}

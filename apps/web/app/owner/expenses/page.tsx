@@ -7,6 +7,7 @@ import { dayLabel, EXPENSE_LABEL, monthLabel, MonthPicker, Sheet, thisMonth, toS
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
+import { Icon } from '@/lib/icons';
 
 /** Common withholding rates (ภ.ง.ด.3/53): rent 5%, services 3%, advertising 2%, transport 1%. */
 const WHT = [[0, 'ไม่หัก'], [100, '1% ค่าขนส่ง'], [200, '2% ค่าโฆษณา'], [300, '3% ค่าบริการ'], [500, '5% ค่าเช่า']] as const;
@@ -47,7 +48,7 @@ export default function Expenses() {
             <h1 style={{ margin: 0, fontSize: 20 }}>ค่าใช้จ่าย · {monthLabel(month)}</h1>
             <span className="muted" style={{ fontSize: 14 }}>ต้นทุนวัตถุดิบมาจากการรับของและขาย ไม่ต้องบันทึกซ้ำที่นี่</span>
             <span className="spacer" />
-            <button className="btn btn-primary" onClick={() => setAdding(true)} disabled={!owner} title={owner ? undefined : 'เฉพาะเจ้าของร้าน'}>+ บันทึกค่าใช้จ่าย</button>
+            <button className="btn btn-primary" onClick={() => setAdding(true)} disabled={!owner} title={owner ? undefined : 'เฉพาะเจ้าของร้าน'}><Icon name="plus" /> บันทึกค่าใช้จ่าย</button>
           </div>
           <div className="tbl-wrap">
             <table className="tbl">
@@ -137,7 +138,7 @@ function ExpenseSheet({ month, vatShop, onClose, onSaved }: { month: string; vat
       )}
       {err && <div className="error" role="alert">{err}</div>}
       <button className="btn btn-primary btn-lg" onClick={save}
-        disabled={!f.description.trim() || !Number.isFinite(total) || total < 0 || !Number.isFinite(vat) || vat > total}>บันทึก</button>
+        disabled={!f.description.trim() || !Number.isFinite(total) || total < 0 || !Number.isFinite(vat) || vat > total}><Icon name="save" size={22} /> บันทึก</button>
     </Sheet>
   );
 }

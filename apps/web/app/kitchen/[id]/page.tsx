@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { api, errText } from '@/lib/api';
 import { kitchenLines, printTicket, stationPrinter, usePrinters, type PrintResult } from '@/lib/print';
+import { Icon } from '@/lib/icons';
 
 const STATION: Record<string, string> = { kitchen: 'ครัว', bar: 'บาร์น้ำ' };
 
@@ -91,13 +92,13 @@ function Ticket() {
               {r?.status === 'done' && <span style={{ color: 'var(--accent-ink)', fontWeight: 600 }}>พิมพ์แล้ว</span>}
               {r?.status === 'waiting' && <span className="error">ส่งงานแล้ว เครื่องพิมพ์ยังไม่ตอบ</span>}
               {r?.status === 'failed' && <span className="error">{r.error}</span>}
-              <button className="btn" disabled={r?.status === 'sending'} onClick={() => sendStation(st)}>ส่งไปพิมพ์อีกครั้ง</button>
+              <button className="btn" disabled={r?.status === 'sending'} onClick={() => sendStation(st)}><Icon name="print" /> ส่งไปพิมพ์อีกครั้ง</button>
             </div>
           );
         })}
         <button className={`btn btn-lg${list && stations.some((st) => stationPrinter(list.printers, st)) ? '' : ' btn-primary'}`} onClick={() => window.print()}>พิมพ์ผ่านเบราว์เซอร์</button>
-        <Link className="btn btn-lg" href={`/pos/order/${id}`}>กลับไปที่บิล</Link>
-        <Link className="btn" href="/pos">ผังโต๊ะ</Link>
+        <Link className="btn btn-lg" href={`/pos/order/${id}`}><Icon name="back" /> กลับไปที่บิล</Link>
+        <Link className="btn" href="/pos"><Icon name="table" /> ผังโต๊ะ</Link>
       </div>
     </main>
   );

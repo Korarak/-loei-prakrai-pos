@@ -106,7 +106,7 @@ export function NewIngredientSheet({ onClose, onCreated, initialName = '' }: { o
         </select>
       </div>
       {err && <div className="error" role="alert">{err}</div>}
-      <button className="btn btn-primary btn-lg" onClick={save} disabled={!ok || busy}>{busy ? 'กำลังบันทึก…' : 'สร้างและใช้เลย'}</button>
+      <button className="btn btn-primary btn-lg" onClick={save} disabled={!ok || busy}>{busy ? 'กำลังบันทึก…' : <><Icon name="check" size={22} /> สร้างและใช้เลย</>}</button>
     </Sheet>
   );
 }

@@ -112,10 +112,10 @@ export function ItemSheet({ item, ings, cats, groups, items, vatRatio, onClose, 
               {preview ? <img src={preview} alt={name || 'รูปเมนู'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <BowlIcon />}
             </div>
             <label className="btn btn-outline" style={{ cursor: 'pointer', minHeight: 40, padding: '0 12px', fontSize: 14 }}>
-              {preview ? 'เปลี่ยนรูป' : 'เพิ่มรูป'}
+              <Icon name="plus" size={16} /> {preview ? 'เปลี่ยนรูป' : 'เพิ่มรูป'}
               <input type="file" accept="image/*" hidden onChange={(e) => { setFile(e.target.files?.[0] ?? null); e.target.value = ''; }} />
             </label>
-            {preview && <button className="btn" style={{ minHeight: 36, padding: '0 10px', fontSize: 13 }} onClick={removePhoto}>ลบรูป</button>}
+            {preview && <button className="btn" style={{ minHeight: 36, padding: '0 10px', fontSize: 13 }} onClick={removePhoto}><Icon name="trash" /> ลบรูป</button>}
           </div>
           <div style={{ flex: 1, display: 'grid', gap: 12 }}>
             <label className="field">ชื่อเมนู<input value={name} onChange={(e) => setName(e.target.value)} autoFocus={!item} placeholder="เช่น สเต็กสันนอก 200 ก." /></label>

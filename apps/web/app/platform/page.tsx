@@ -172,7 +172,7 @@ function Detail({ id, onClose, onChanged }: { id: string; onClose: () => void; o
 
         <h3 style={{ margin: '8px 0 0' }}>หมายเหตุภายใน <span className="muted" style={{ fontSize: 13, fontWeight: 400 }}>(ร้านไม่เห็น)</span></h3>
         <label className="field"><textarea rows={3} value={note} maxLength={1000} onChange={(e) => setNote(e.target.value)} placeholder="เช่น โทรยืนยันแล้ว / รอเอกสาร ภ.พ.20" /></label>
-        <div><button className="btn btn-primary" disabled={note === (t.admin_note ?? '')} onClick={() => patch({ adminNote: note.trim() || null }, 'บันทึกหมายเหตุแล้ว')}>บันทึกหมายเหตุ</button></div>
+        <div><button className="btn btn-primary" disabled={note === (t.admin_note ?? '')} onClick={() => patch({ adminNote: note.trim() || null }, 'บันทึกหมายเหตุแล้ว')}><Icon name="save" /> บันทึกหมายเหตุ</button></div>
 
         <h3 style={{ margin: '8px 0 0' }}>บัญชีในร้าน ({d.members.length})</h3>
         <div className="tbl-wrap"><table className="tbl">
@@ -184,7 +184,7 @@ function Detail({ id, onClose, onChanged }: { id: string; onClose: () => void; o
               <td style={{ fontSize: 13 }}>{m.has_totp ? '2 ขั้นตอน' : m.email ? <span className="muted">รหัสผ่านอย่างเดียว</span> : m.has_pin ? 'PIN' : '—'}
                 {m.locked && <span className="pill" style={{ marginLeft: 6, background: 'var(--warn-soft)', color: 'var(--warn-ink)' }}>ล็อก</span>}</td>
               <td>{ago(m.last_login_at)}</td>
-              <td className="num">{m.locked && <button className="btn" style={{ minHeight: 40 }} onClick={() => unlock(m.user_id)}>ปลดล็อก</button>}</td>
+              <td className="num">{m.locked && <button className="btn" style={{ minHeight: 40 }} onClick={() => unlock(m.user_id)}><Icon name="key" /> ปลดล็อก</button>}</td>
             </tr>))}</tbody>
         </table></div>
       </>}

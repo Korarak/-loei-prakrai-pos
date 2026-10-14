@@ -10,6 +10,7 @@ import { OwnerTabs } from '../OwnerTabs';
 import { PrintersSection } from './PrintersSection';
 import { SecuritySection } from './SecuritySection';
 import { TablesSection } from './TablesSection';
+import { Icon } from '@/lib/icons';
 
 export default function Settings() {
   const { me, reload } = useMe();
@@ -124,7 +125,7 @@ export default function Settings() {
         </div>
         {err && <div className="error" role="alert">{err}</div>}
         {msg && <div style={{ color: 'var(--accent-ink)', fontWeight: 600 }}>{msg}</div>}
-        <div><button className="btn btn-primary btn-lg" onClick={save} disabled={!owner || taxIdBad || branchBad || ppBad || !f.name.trim()} style={{ minWidth: 200 }}>บันทึก</button></div>
+        <div><button className="btn btn-primary btn-lg" onClick={save} disabled={!owner || taxIdBad || branchBad || ppBad || !f.name.trim()} style={{ minWidth: 200 }}><Icon name="save" /> บันทึก</button></div>
         <TablesSection canEdit={me.role === 'owner' || me.role === 'manager'} />
         <PrintersSection me={me} />
         <SecuritySection isOwner={me.role === 'owner'} />
@@ -134,7 +135,7 @@ export default function Settings() {
             <div className="muted" style={{ fontSize: 14 }}>ดาวน์โหลดข้อมูลทั้งหมดของร้าน (เมนู บิล เอกสารภาษี สต็อก ค่าใช้จ่าย audit log) เป็นไฟล์ JSON เก็บไว้เองได้ตลอด ระบบสำรองรายคืนบนเซิร์ฟเวอร์แยกต่างหาก</div>
           </div>
           {/* A plain link: the browser downloads with the session cookie, no JS needed. */}
-          <a className="btn btn-outline" href="/api/export" download aria-disabled={!owner} style={owner ? undefined : { pointerEvents: 'none', opacity: 0.5 }}>ดาวน์โหลดข้อมูลร้าน</a>
+          <a className="btn btn-outline" href="/api/export" download aria-disabled={!owner} style={owner ? undefined : { pointerEvents: 'none', opacity: 0.5 }}><Icon name="download" /> ดาวน์โหลดข้อมูลร้าน</a>
         </section>
       </main>
     </>

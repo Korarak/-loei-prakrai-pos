@@ -6,6 +6,7 @@ import { Sheet } from '@/lib/owner';
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
+import { Icon } from '@/lib/icons';
 
 interface Draft { id?: string; name: string; taxId: string; branch: string; address: string; phone: string; note: string; active: boolean }
 const blank: Draft = { name: '', taxId: '', branch: '00000', address: '', phone: '', note: '', active: true };
@@ -33,7 +34,7 @@ export default function CustomersPage() {
             <span className="spacer" />
             <input aria-label="ค้นหาลูกค้า" placeholder="ค้นหาชื่อ / เลขผู้เสียภาษี / เบอร์" value={q} onChange={(e) => setQ(e.target.value)}
               style={{ height: 48, borderRadius: 12, border: '1px solid #c9cfc7', padding: '0 12px', minWidth: 240, fontSize: 16 }} />
-            <button className="btn btn-primary" onClick={() => setEdit(blank)}>+ เพิ่มลูกค้า</button>
+            <button className="btn btn-primary" onClick={() => setEdit(blank)}><Icon name="plus" /> เพิ่มลูกค้า</button>
           </div>
           {rows?.length === 0 && <p className="muted">{q ? 'ไม่พบลูกค้าตามที่ค้นหา' : 'ยังไม่มีลูกค้า — เพิ่มที่นี่ หรือกด “บันทึกเป็นลูกค้า” ตอนออกใบกำกับภาษีเต็มรูป'}</p>}
           {rows && rows.length > 0 && (
@@ -88,7 +89,7 @@ function CustomerSheet({ draft, onClose, onSaved }: { draft: Draft; onClose: () 
         </label>
       )}
       {err && <div className="error" role="alert">{err}</div>}
-      <button className="btn btn-primary btn-lg" onClick={save} disabled={busy || !d.name.trim() || !d.taxId.trim() || d.address.trim().length < 5}>{busy ? 'กำลังบันทึก…' : 'บันทึก'}</button>
+      <button className="btn btn-primary btn-lg" onClick={save} disabled={busy || !d.name.trim() || !d.taxId.trim() || d.address.trim().length < 5}>{busy ? 'กำลังบันทึก…' : <><Icon name="save" size={22} /> บันทึก</>}</button>
     </Sheet>
   );
 }

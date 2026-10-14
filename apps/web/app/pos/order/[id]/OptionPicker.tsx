@@ -2,6 +2,7 @@
 
 import { formatBaht } from '@prakai/core';
 import { useState } from 'react';
+import { Icon } from '@/lib/icons';
 
 export interface OptionGroup {
   id: string; name: string; min_select: number; max_select: number;
@@ -77,9 +78,9 @@ export function OptionPicker({ item, groups, onCancel, onAdd }: {
         <div className="row" style={{ padding: '12px 20px', borderTop: '1px solid var(--line)', gap: 10 }}>
           <button type="button" className="btn" style={{ width: 48, height: 52, fontSize: 24 }} aria-label="ลดจำนวน" onClick={() => setQty(Math.max(1, qty - 1))}>−</button>
           <b style={{ minWidth: 28, textAlign: 'center', fontSize: 20 }}>{qty}</b>
-          <button type="button" className="btn" style={{ width: 48, height: 52, fontSize: 24 }} aria-label="เพิ่มจำนวน" onClick={() => setQty(Math.min(99, qty + 1))}>+</button>
+          <button type="button" className="btn" style={{ width: 48, height: 52, fontSize: 24 }} aria-label="เพิ่มจำนวน" onClick={() => setQty(Math.min(99, qty + 1))}><Icon name="plus" /> </button>
           <span className="spacer" />
-          <button type="button" className="btn" style={{ height: 52 }} onClick={onCancel}>ยกเลิก</button>
+          <button type="button" className="btn" style={{ height: 52 }} onClick={onCancel}><Icon name="close" /> ยกเลิก</button>
           <button className="btn btn-primary" style={{ height: 52 }} disabled={missing.length > 0}>
             {missing.length > 0 ? `เลือก${missing[0]!.name}` : `เพิ่ม · ฿${formatBaht(unit * qty).replace(/\.00$/, '')}`}
           </button>

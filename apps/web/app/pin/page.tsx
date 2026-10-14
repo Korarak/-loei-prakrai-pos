@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
+import { Icon } from '@/lib/icons';
 import { Sparkle } from '@/lib/ui';
 
 interface Lock { device: { id: string; name: string }; shop: string; staff: { id: string; name: string; role: string }[] }
@@ -83,7 +84,7 @@ export default function Pin() {
         ) : (
           <>
             <div className="row">
-              <button className="btn" onClick={() => { setWho(null); setErr(''); }}>← เปลี่ยนคน</button>
+              <button className="btn" onClick={() => { setWho(null); setErr(''); }}><Icon name="back" /> เปลี่ยนคน</button>
               <div style={{ fontSize: 18 }}><b>{who.name}</b> <span className="muted">· {ROLE[who.role]}</span></div>
             </div>
             <div aria-label={`ใส่แล้ว ${pin.length} จาก 6 หลัก`} role="status" style={{ display: 'flex', justifyContent: 'center', gap: 14, padding: '6px 0' }}>

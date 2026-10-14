@@ -7,6 +7,7 @@ import { Sheet, toSatang, UNIT } from '@/lib/owner';
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
+import { Icon } from '@/lib/icons';
 
 interface Opt { id?: string; name: string; price: string; active: boolean; ingredients: { ingredientId: string; qty: string }[] }
 interface Draft { id?: string; name: string; minSelect: number; maxSelect: number; active: boolean; itemIds: string[]; options: Opt[] }
@@ -50,7 +51,7 @@ export default function OptionsPage() {
             <h1 style={{ margin: 0, fontSize: 20 }}>ตัวเลือกเมนู</h1>
             <span className="muted" style={{ fontSize: 14 }}>ระดับเผ็ด ไซส์ ท็อปปิ้ง — ติดกับเมนูที่เลือก หน้าขายจะถามตอนแตะเมนู</span>
             <span className="spacer" />
-            <button className="btn btn-primary" onClick={() => setEdit({ name: '', minSelect: 0, maxSelect: 1, active: true, itemIds: [], options: [blankOpt(), blankOpt()] })}>+ เพิ่มกลุ่มตัวเลือก</button>
+            <button className="btn btn-primary" onClick={() => setEdit({ name: '', minSelect: 0, maxSelect: 1, active: true, itemIds: [], options: [blankOpt(), blankOpt()] })}><Icon name="plus" /> เพิ่มกลุ่มตัวเลือก</button>
           </div>
           {groups?.length === 0 && <p className="muted">ยังไม่มีตัวเลือก เช่น กลุ่ม “ระดับเผ็ด” (ไม่เผ็ด / เผ็ดกลาง / เผ็ดมาก) หรือ “ท็อปปิ้ง” (ไข่ดาว +10 บาท)</p>}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
@@ -135,7 +136,7 @@ function GroupSheet({ draft, items, ings, onClose, onSaved }: { draft: Draft; it
               {o.id ? (
                 <button className="btn" style={{ minHeight: 44 }} onClick={() => setOpt(i, { active: !o.active })}>{o.active ? 'ปิด' : 'เปิด'}</button>
               ) : (
-                <button className="btn" style={{ minHeight: 44 }} aria-label="ลบตัวเลือก" onClick={() => setD({ ...d, options: d.options.filter((_, k) => k !== i) })}>ลบ</button>
+                <button className="btn" style={{ minHeight: 44 }} aria-label="ลบตัวเลือก" onClick={() => setD({ ...d, options: d.options.filter((_, k) => k !== i) })}><Icon name="trash" /> ลบ</button>
               )}
             </div>
             {o.ingredients.map((x, k) => {
@@ -155,11 +156,11 @@ function GroupSheet({ draft, items, ings, onClose, onSaved }: { draft: Draft; it
               );
             })}
             <button className="btn" style={{ justifySelf: 'start', minHeight: 40, fontSize: 14 }}
-              onClick={() => setOpt(i, { ingredients: [...o.ingredients, { ingredientId: '', qty: '' }] })}>+ ตัดสต็อกวัตถุดิบเพิ่มเมื่อเลือกอันนี้</button>
+              onClick={() => setOpt(i, { ingredients: [...o.ingredients, { ingredientId: '', qty: '' }] })}><Icon name="plus" /> ตัดสต็อกวัตถุดิบเพิ่มเมื่อเลือกอันนี้</button>
           </div>
         ))}
       </div>
-      <button className="btn btn-outline" onClick={() => setD({ ...d, options: [...d.options, blankOpt()] })}>+ เพิ่มตัวเลือก</button>
+      <button className="btn btn-outline" onClick={() => setD({ ...d, options: [...d.options, blankOpt()] })}><Icon name="plus" /> เพิ่มตัวเลือก</button>
 
       <div style={{ fontWeight: 700 }}>ใช้กับเมนู</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 6 }}>
@@ -172,7 +173,7 @@ function GroupSheet({ draft, items, ings, onClose, onSaved }: { draft: Draft; it
       </div>
       <div className="muted" style={{ fontSize: 14 }}>ตัวเลือกที่ปิดหรือเอาออก ยังแสดงในบิลเก่าตามเดิม ใช้เพิ่มในบิลใหม่ไม่ได้</div>
       {err && <div className="error" role="alert">{err}</div>}
-      <button className="btn btn-primary btn-lg" onClick={save} disabled={!valid || busy}>{busy ? 'กำลังบันทึก…' : 'บันทึก'}</button>
+      <button className="btn btn-primary btn-lg" onClick={save} disabled={!valid || busy}>{busy ? 'กำลังบันทึก…' : <><Icon name="save" size={22} /> บันทึก</>}</button>
     </Sheet>
   );
 }

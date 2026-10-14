@@ -4,6 +4,7 @@ import { formatBaht } from '@prakai/core';
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
 import { dayLabel, monthLabel } from '@/lib/owner';
+import { Icon } from '@/lib/icons';
 
 interface VatReturn {
   month: string;
@@ -40,7 +41,7 @@ export function VatReturnSection({ month }: { month: string }) {
       <div className="row" style={{ flexWrap: 'wrap' }}>
         <h2 style={{ margin: 0, fontSize: 20 }}>สรุป ภ.พ.30 และรายงานภาษีซื้อ · {monthLabel(month)}</h2>
         <span className="spacer" />
-        <button className="btn btn-primary" onClick={csv} disabled={!r?.purchases.length}>ดาวน์โหลดภาษีซื้อ (CSV)</button>
+        <button className="btn btn-primary" onClick={csv} disabled={!r?.purchases.length}><Icon name="download" /> ดาวน์โหลดภาษีซื้อ (CSV)</button>
       </div>
       {err && <div className="error">{err}</div>}
       {s && (

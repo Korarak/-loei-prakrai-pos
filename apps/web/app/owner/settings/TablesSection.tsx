@@ -49,7 +49,7 @@ export function TablesSection({ canEdit, bare, onChanged }: { canEdit: boolean; 
           <input type="number" min={0} max={200} inputMode="numeric" value={count} onChange={(e) => setCount(e.target.value)} disabled={!canEdit} />
         </label>
         <button className="btn btn-outline" style={{ minHeight: 50 }} disabled={!canEdit || !countOk || !rows || n === rows.length}
-          onClick={() => run(() => api('PUT', '/api/tables/count', { count: n }), `ตั้งเป็น ${n} โต๊ะแล้ว`)}>ปรับจำนวน</button>
+          onClick={async () => { if (rows && n < rows.length && !(await confirm({ title: `ลดเหลือ ${n} โต๊ะ?`, body: `โต๊ะท้ายสุดที่ว่างจะถูกลบ ${rows.length - n} โต๊ะ`, confirm: 'ลดจำนวนโต๊ะ', tone: 'danger' }))) return; run(() => api('PUT', '/api/tables/count', { count: n }), `ตั้งเป็น ${n} โต๊ะแล้ว`); }}><Icon name="table" /> ปรับจำนวน</button>
         <span className="muted" style={{ fontSize: 14, flexBasis: 320, flexGrow: 1 }}>
           เพิ่ม = ต่อท้ายเป็นเลขถัดไป · ลด = เอาโต๊ะท้ายสุดที่ว่างออก (โต๊ะที่มีบิลเปิดอยู่จะไม่ถูกลบ ประวัติบิลเก่ายังอยู่ครบ)
         </span>

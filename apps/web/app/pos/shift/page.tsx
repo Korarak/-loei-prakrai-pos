@@ -68,7 +68,7 @@ export default function ShiftPage() {
         <aside className="no-print" style={{ display: 'grid', gap: 16 }}>
           {err && <div className="error" role="alert">{err}</div>}
           {closed && (
-            <button className="btn btn-primary btn-lg" onClick={() => { setClosed(null); setCounted(''); setNote(''); }}>เปิดกะใหม่</button>
+            <button className="btn btn-primary btn-lg" onClick={() => { setClosed(null); setCounted(''); setNote(''); }}><Icon name="clock" /> เปิดกะใหม่</button>
           )}
           {!closed && cur === null && (
             <form className="card" style={{ padding: 16, display: 'grid', gap: 10 }}
@@ -98,7 +98,7 @@ export default function ShiftPage() {
               <label><span className="muted">เหตุผล</span>
                 <input style={{ ...input, fontSize: 16 }} value={move.reason} onChange={(e) => setMove({ ...move, reason: e.target.value })}
                   placeholder={move.kind === 'in' ? 'เช่น แลกเหรียญเพิ่ม' : 'เช่น จ่ายค่าน้ำแข็ง'} required minLength={2} /></label>
-              <button className="btn btn-outline">บันทึก</button>
+              <button className="btn btn-outline"><Icon name="save" /> บันทึก</button>
             </form>
 
             <form className="card" style={{ padding: 16, display: 'grid', gap: 10 }}

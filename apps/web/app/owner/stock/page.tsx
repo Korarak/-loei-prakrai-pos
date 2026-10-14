@@ -7,6 +7,7 @@ import { dayLabel, fmtQty, MonthPicker, Sheet, Stat, thisMonth, toSatang, today,
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
+import { Icon } from '@/lib/icons';
 
 const KIND: Record<string, string> = { food: 'อาหาร', beverage: 'เครื่องดื่ม', packaging: 'บรรจุภัณฑ์' };
 const MOVE: Record<string, string> = { purchase: 'รับของ', sale: 'ขาย', waste: 'ของเสีย', adjust: 'ปรับจากนับสต็อก' };
@@ -54,11 +55,11 @@ export default function Stock() {
             <h1 style={{ margin: 0, fontSize: 20 }}>วัตถุดิบ</h1>
             <span className="muted" style={{ fontSize: 14 }}>ยอดคงเหลือคำนวณจากสมุดสต็อก แก้ตรงไม่ได้ ต้องรับของ บันทึกของเสีย หรือนับสต็อก</span>
             <span className="spacer" />
-            <button className="btn btn-primary" onClick={() => setPanel('purchase')}>รับของ</button>
-            <button className="btn btn-warn" onClick={() => setPanel('waste')}>ของเสีย</button>
-            <button className="btn btn-outline" onClick={() => setPanel('count')}>นับสต็อก</button>
-            <button className="btn" onClick={() => setPanel('new')}>+ วัตถุดิบ</button>
-            <button className="btn" onClick={() => setPanel('newPrep')}>+ สูตรย่อย</button>
+            <button className="btn btn-primary" onClick={() => setPanel('purchase')}><Icon name="box" /> รับของ</button>
+            <button className="btn btn-warn" onClick={() => setPanel('waste')}><Icon name="box" /> ของเสีย</button>
+            <button className="btn btn-outline" onClick={() => setPanel('count')}><Icon name="box" /> นับสต็อก</button>
+            <button className="btn" onClick={() => setPanel('new')}><Icon name="plus" /> วัตถุดิบ</button>
+            <button className="btn" onClick={() => setPanel('newPrep')}><Icon name="plus" /> สูตรย่อย</button>
           </div>
           <div className="tbl-wrap">
             <table className="tbl">
@@ -217,16 +218,16 @@ function PurchaseSheet({ ings, vatShop, onClose, onSaved }: { ings: any[]; vatSh
                   <span className="muted" style={{ marginLeft: 6 }}>{ing?.purchase_unit ?? ''}</span>
                 </td>
                 <td className="num"><input aria-label="ราคา" inputMode="decimal" value={l.amount} onChange={(e) => set({ amount: e.target.value })} style={{ ...cell, width: 110, textAlign: 'right' }} /></td>
-                <td className="num">{lines.length > 1 && <button className="btn" style={{ minHeight: 40 }} onClick={() => setLines(lines.filter((_, k) => k !== i))}>ลบ</button>}</td>
+                <td className="num">{lines.length > 1 && <button className="btn" style={{ minHeight: 40 }} onClick={() => setLines(lines.filter((_, k) => k !== i))}><Icon name="trash" /> ลบ</button>}</td>
               </tr>
             );
           })}
           <tr className="total"><td>รวมตามบิล</td><td /><td className="num">{formatBaht(sum)}</td><td /></tr>
         </tbody>
       </table>
-      <button className="btn btn-outline" onClick={() => setLines([...lines, { ingredientId: '', qty: '', amount: '' }])}>+ เพิ่มรายการ</button>
+      <button className="btn btn-outline" onClick={() => setLines([...lines, { ingredientId: '', qty: '', amount: '' }])}><Icon name="plus" /> เพิ่มรายการ</button>
       {err && <div className="error" role="alert">{err}</div>}
-      <button className="btn btn-primary btn-lg" onClick={save} disabled={!ok || busy}>บันทึกรับของ</button>
+      <button className="btn btn-primary btn-lg" onClick={save} disabled={!ok || busy}><Icon name="save" /> บันทึกรับของ</button>
     </Sheet>
   );
 }
@@ -254,7 +255,7 @@ function WasteSheet({ ings, onClose, onSaved }: { ings: any[]; onClose: () => vo
       <label className="field">เหตุผล<input value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} placeholder="เช่น เน่า หมดอายุ ทำหก" /></label>
       {ing && Number(f.qty) > 0 && <div className="muted">มูลค่าประมาณ ฿{formatBaht(Math.round(Number(f.qty) * ing.avg_cost / 10_000))}</div>}
       {err && <div className="error" role="alert">{err}</div>}
-      <button className="btn btn-warn btn-lg" onClick={save} disabled={!f.ingredientId || !(Number(f.qty) > 0) || f.reason.trim().length < 3}>บันทึกของเสีย</button>
+      <button className="btn btn-warn btn-lg" onClick={save} disabled={!f.ingredientId || !(Number(f.qty) > 0) || f.reason.trim().length < 3}><Icon name="save" size={22} /> บันทึกของเสีย</button>
     </Sheet>
   );
 }
@@ -299,7 +300,7 @@ function CountSheet({ ings, onClose, onSaved }: { ings: any[]; onClose: () => vo
       </table>
       <div className="row" style={{ fontWeight: 700 }}>ส่วนต่างรวม <span style={{ color: diffValue < 0 ? 'var(--warn-ink)' : 'var(--accent-ink)' }}>฿{formatBaht(diffValue)}</span></div>
       {err && <div className="error" role="alert">{err}</div>}
-      <button className="btn btn-primary btn-lg" onClick={save} disabled={entered.length === 0 || entered.some(([, v]) => !(Number(v) >= 0))}>บันทึกผลนับ ({entered.length} รายการ)</button>
+      <button className="btn btn-primary btn-lg" onClick={save} disabled={entered.length === 0 || entered.some(([, v]) => !(Number(v) >= 0))}><Icon name="save" size={22} /> บันทึกผลนับ ({entered.length} รายการ)</button>
     </Sheet>
   );
 }
@@ -391,7 +392,7 @@ function IngredientSheet({ ing, all, prep = false, onClose, onSaved }: { ing?: a
                     <span className="muted" style={{ marginLeft: 6 }}>{i ? UNIT[i.base_unit] : ''}</span>
                   </td>
                   <td className="num">{formatBaht(partCost(p))}</td>
-                  <td className="num">{parts.length > 1 && <button className="btn" style={{ minHeight: 40 }} onClick={() => setParts(parts.filter((_, j) => j !== k))}>ลบ</button>}</td>
+                  <td className="num">{parts.length > 1 && <button className="btn" style={{ minHeight: 40 }} onClick={() => setParts(parts.filter((_, j) => j !== k))}><Icon name="trash" /> ลบ</button>}</td>
                 </tr>
               );
             })}
@@ -402,13 +403,13 @@ function IngredientSheet({ ing, all, prep = false, onClose, onSaved }: { ing?: a
           </tbody>
         </table>
         <div className="row">
-          <button className="btn btn-outline" onClick={() => setParts([...parts, { ingredientId: '', qty: '' }])}>+ ส่วนผสม</button>
+          <button className="btn btn-outline" onClick={() => setParts([...parts, { ingredientId: '', qty: '' }])}><Icon name="plus" /> ส่วนผสม</button>
           <span className="spacer" />
           {Number(batch) > 0 && <span className="muted">≈ ฿{(batchCost / 100 / Number(batch)).toFixed(4)} ต่อ {UNIT[f.baseUnit]}</span>}
         </div>
         <div className="muted" style={{ fontSize: 14 }}>สูตรย่อยไม่มีสต็อกของตัวเอง เมื่อขายเมนูที่ใช้ ระบบตัดสต็อกส่วนผสมตามสัดส่วน · บันทึกของเสียของสูตรย่อยได้ (ตัดส่วนผสมเป็นของเสีย)</div>
         {err && <div className="error" role="alert">{err}</div>}
-        <button className="btn btn-primary btn-lg" onClick={save} disabled={!f.name.trim() || !(Number(batch) > 0) || !partsOk}>บันทึกสูตรย่อย</button>
+        <button className="btn btn-primary btn-lg" onClick={save} disabled={!f.name.trim() || !(Number(batch) > 0) || !partsOk}><Icon name="save" size={22} /> บันทึกสูตรย่อย</button>
       </> : <>
       <div className="grid-form">
         <label className="field">ชื่อ<input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
@@ -436,7 +437,7 @@ function IngredientSheet({ ing, all, prep = false, onClose, onSaved }: { ing?: a
       <div className="muted" style={{ fontSize: 14 }}>ราคาต่อหน่วยจะถูกแทนด้วยต้นทุนเฉลี่ยถ่วงน้ำหนักทุกครั้งที่บันทึกรับของ</div>
       {err && <div className="error" role="alert">{err}</div>}
       <button className="btn btn-primary btn-lg" onClick={save}
-        disabled={!f.name.trim() || !(Number(f.purchaseFactor) > 0) || !(Number(f.yieldPct) >= 1 && Number(f.yieldPct) <= 100)}>บันทึก</button>
+        disabled={!f.name.trim() || !(Number(f.purchaseFactor) > 0) || !(Number(f.yieldPct) >= 1 && Number(f.yieldPct) <= 100)}><Icon name="save" size={22} /> บันทึก</button>
       </>}
       {ing && !prep && (
         <>

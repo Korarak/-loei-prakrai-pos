@@ -3,6 +3,7 @@
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
+import { Icon } from '@/lib/icons';
 
 interface Status { enabled: boolean; recoveryLeft: number; hasPassword: boolean }
 
@@ -63,7 +64,7 @@ export function SecuritySection({ isOwner }: { isOwner: boolean }) {
         แม้รหัสผ่านหลุด คนอื่นก็เข้าไม่ได้{isOwner ? ' · แนะนำให้เจ้าของร้านเปิดใช้ก่อนเริ่มขายจริง' : ''} · พนักงานที่เข้าด้วย PIN บนเครื่องที่ลงทะเบียนไม่ต้องใช้
       </p>
 
-      {!st.enabled && !setup && <div><button className="btn btn-outline" onClick={start}>เปิดใช้ยืนยันตัวตนสองขั้น</button></div>}
+      {!st.enabled && !setup && <div><button className="btn btn-outline" onClick={start}><Icon name="shield" /> เปิดใช้ยืนยันตัวตนสองขั้น</button></div>}
 
       {setup && (
         <form onSubmit={confirm} style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'flex-start' }}>
@@ -79,8 +80,8 @@ export function SecuritySection({ isOwner }: { isOwner: boolean }) {
               <input value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code"
                 style={{ fontSize: 24, letterSpacing: 6, textAlign: 'center' }} autoFocus /></label>
             <div className="row" style={{ gap: 8 }}>
-              <button className="btn btn-primary" disabled={code.length !== 6}>ยืนยันและเปิดใช้</button>
-              <button type="button" className="btn" onClick={() => { setSetup(null); setCode(''); }}>ยกเลิก</button>
+              <button className="btn btn-primary" disabled={code.length !== 6}><Icon name="check" /> ยืนยันและเปิดใช้</button>
+              <button type="button" className="btn" onClick={() => { setSetup(null); setCode(''); }}><Icon name="close" /> ยกเลิก</button>
             </div>
           </div>
         </form>
@@ -95,20 +96,20 @@ export function SecuritySection({ isOwner }: { isOwner: boolean }) {
           </div>
           <div className="row" style={{ gap: 8 }}>
             <button className="btn" onClick={() => navigator.clipboard?.writeText(codes.join('\n'))}>คัดลอก</button>
-            <button className="btn" onClick={() => setCodes(null)}>เก็บแล้ว</button>
+            <button className="btn" onClick={() => setCodes(null)}><Icon name="check" /> เก็บแล้ว</button>
           </div>
         </div>
       )}
 
-      {st.enabled && !off.open && <div><button className="btn btn-warn" onClick={() => setOff({ ...off, open: true })}>ปิดยืนยันตัวตนสองขั้น</button></div>}
+      {st.enabled && !off.open && <div><button className="btn btn-warn" onClick={() => setOff({ ...off, open: true })}><Icon name="close" /> ปิดยืนยันตัวตนสองขั้น</button></div>}
       {st.enabled && off.open && (
         <form onSubmit={disable} className="row" style={{ gap: 10, flexWrap: 'wrap', alignItems: 'end' }}>
           <label className="field" style={{ width: 220 }}>รหัสผ่าน
             <input type="password" autoComplete="current-password" value={off.password} onChange={(e) => setOff({ ...off, password: e.target.value })} required /></label>
           <label className="field" style={{ width: 200 }}>รหัสจากแอป หรือรหัสกู้คืน
             <input value={off.code} onChange={(e) => setOff({ ...off, code: e.target.value })} autoComplete="one-time-code" required /></label>
-          <button className="btn btn-warn" style={{ minHeight: 50 }}>ยืนยันปิดใช้</button>
-          <button type="button" className="btn" style={{ minHeight: 50 }} onClick={() => setOff({ open: false, password: '', code: '' })}>ยกเลิก</button>
+          <button className="btn btn-warn" style={{ minHeight: 50 }}><Icon name="check" /> ยืนยันปิดใช้</button>
+          <button type="button" className="btn" style={{ minHeight: 50 }} onClick={() => setOff({ open: false, password: '', code: '' })}><Icon name="close" /> ยกเลิก</button>
         </form>
       )}
       {err && <div className="error" role="alert">{err}</div>}

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api, errText } from '@/lib/api';
+import { Icon } from '@/lib/icons';
 import { Sparkle } from '@/lib/ui';
 
 export default function Signup() {
@@ -61,7 +62,7 @@ export default function Signup() {
         <div className="row">
           <Link href="/login" className="muted">มีบัญชีแล้ว? เข้าสู่ระบบ</Link>
           <span className="spacer" />
-          <button className="btn btn-primary btn-lg" disabled={busy} style={{ minWidth: 220 }}>{busy ? 'กำลังสร้างร้าน…' : 'สร้างร้าน'}</button>
+          <button className="btn btn-primary btn-lg" disabled={busy} style={{ minWidth: 220 }}>{busy ? 'กำลังสร้างร้าน…' : <><Icon name="check" size={22} /> สร้างร้าน</>}</button>
         </div>
       </form>
     </main>

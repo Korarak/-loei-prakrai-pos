@@ -8,6 +8,8 @@ import { api, errText } from '@/lib/api';
 import { Sparkle } from '@/lib/ui';
 import { agentOnline, printTicket, receiptLines, receiptPrinterFor, usePrinters, type PrintResult } from '@/lib/print';
 import { terminalFor, useMe } from '@/lib/useMe';
+import { useConfirm } from '@/lib/dialog';
+import { Icon } from '@/lib/icons';
 
 const TITLE: Record<string, [string, string]> = {
   ABB: ['ใบกำกับภาษีอย่างย่อ', 'TAX INVOICE (ABB)'],
@@ -113,7 +115,7 @@ function Receipt() {
 
       <div className="no-print" style={{ display: 'grid', gap: 12, width: 280 }}>
         <PrintButtons doc={d} change={change} fresh={fresh} terminalId={me ? terminalFor(me).id : null} />
-        <Link className="btn btn-lg" href="/pos">กลับผังโต๊ะ</Link>
+        <Link className="btn btn-lg" href="/pos"><Icon name="back" /> กลับผังโต๊ะ</Link>
         {d.credit_notes?.length > 0 && (
           <div className="error" style={{ display: 'grid', gap: 4 }}>
             <b>ใบลดหนี้ของเอกสารนี้</b>
@@ -157,8 +159,8 @@ function PrintButtons({ doc, change, fresh, terminalId }: { doc: any; change: nu
     if (fresh && printer && !auto.current) { auto.current = true; send(); }
   }, [fresh, printer, send]);
 
-  if (!list) return <button className="btn btn-primary btn-lg" disabled>พิมพ์</button>;
-  if (!printer) return <button className="btn btn-primary btn-lg" onClick={() => window.print()}>พิมพ์</button>;
+  if (!list) return <button className="btn btn-primary btn-lg" disabled><Icon name="print" /> พิมพ์</button>;
+  if (!printer) return <button className="btn btn-primary btn-lg" onClick={() => window.print()}><Icon name="print" /> พิมพ์</button>;
   return (
     <>
       <button className="btn btn-primary btn-lg" disabled={state?.status === 'sending'} onClick={() => send()}>
@@ -169,13 +171,14 @@ function PrintButtons({ doc, change, fresh, terminalId }: { doc: any; change: nu
       {state?.status === 'waiting' && (
         <div className="error">{agentOnline(list) ? 'ส่งงานแล้ว เครื่องพิมพ์ยังไม่ตอบ' : 'โปรแกรมพิมพ์ในร้านไม่ได้เปิดอยู่'} — งานจะพิมพ์เมื่อเครื่องพร้อม (ภายใน 10 นาที)</div>
       )}
-      <button className="btn" onClick={() => window.print()}>พิมพ์ผ่านเบราว์เซอร์</button>
+      <button className="btn" onClick={() => window.print()}><Icon name="print" /> พิมพ์ผ่านเบราว์เซอร์</button>
     </>
   );
 }
 
 /** ยกเลิก (วันเดียวกัน หรือใบเสร็จธรรมดา) หรือออกใบลดหนี้ (ใบกำกับภาษีของวันก่อน) — ผู้จัดการเท่านั้น */
 function Correct({ doc, onDone }: { doc: any; onDone: (newDocId?: string) => void }) {
+  const confirm = useConfirm();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [refund, setRefund] = useState<'cash' | 'transfer' | 'none'>('cash');
@@ -189,12 +192,13 @@ function Correct({ doc, onDone }: { doc: any; onDone: (newDocId?: string) => voi
   const pickedGross = picked.reduce((t: number, x: { index: number; qty: number }) => t + doc.lines[x.index].unitPrice * x.qty, 0);
   if (credited && !creditNote) return null;
   if (!open) {
-    return <button className="btn btn-warn" onClick={() => setOpen(true)}>{creditNote ? 'ออกใบลดหนี้' : 'ยกเลิกเอกสาร'}</button>;
+    return <button className="btn btn-warn" onClick={() => setOpen(true)}><Icon name="ban" /> {creditNote ? 'ออกใบลดหนี้' : 'ยกเลิกเอกสาร'}</button>;
   }
   return (
     <form className="card" style={{ padding: 14, display: 'grid', gap: 10 }} onSubmit={async (e) => {
       e.preventDefault();
       setErr('');
+      if (!(await confirm({ title: creditNote ? 'ออกใบลดหนี้?' : 'ยกเลิกเอกสารนี้?', body: creditNote ? 'ออกแล้วแก้ไขไม่ได้' : 'เอกสารที่ยกเลิกแล้วกู้คืนไม่ได้', confirm: creditNote ? 'ออกใบลดหนี้' : 'ยกเลิกเอกสาร', tone: 'danger', icon: 'ban' }))) return;
       try {
         if (creditNote) onDone((await api('POST', `/api/documents/${doc.id}/credit-note`, { reason, refund, lines: whole ? undefined : picked })).id);
         else { await api('POST', `/api/documents/${doc.id}/void`, { reason }); onDone(); }
@@ -216,7 +220,7 @@ function Correct({ doc, onDone }: { doc: any; onDone: (newDocId?: string) => voi
                 onClick={() => setPick(pick.map((q: number, k: number) => (k === i ? Math.max(0, q - 1) : q)))}>−</button>
               <b style={{ width: 20, textAlign: 'center' }}>{pick[i]}</b>
               <button type="button" className="btn" style={{ minWidth: 36, minHeight: 36 }} aria-label={`ลดหนี้ ${l.name} มากขึ้น`}
-                onClick={() => setPick(pick.map((q: number, k: number) => (k === i ? Math.min(doc.remaining[i], q + 1) : q)))}>+</button>
+                onClick={() => setPick(pick.map((q: number, k: number) => (k === i ? Math.min(doc.remaining[i], q + 1) : q)))}><Icon name="plus" /> </button>
             </div>
           ))}
           <div className="muted" style={{ fontSize: 14 }}>ราคาตามเมนู ฿{formatBaht(pickedGross)} (ระบบเฉลี่ยส่วนลด/ค่าบริการตามสัดส่วน)</div>
@@ -239,8 +243,8 @@ function Correct({ doc, onDone }: { doc: any; onDone: (newDocId?: string) => voi
       )}
       {err && <div className="error">{err}</div>}
       <div className="row" style={{ gap: 8 }}>
-        <button className="btn btn-warn" style={{ flex: 1 }} disabled={creditNote && !whole && picked.length === 0}>ยืนยัน</button>
-        <button type="button" className="btn" onClick={() => setOpen(false)}>ปิด</button>
+        <button className="btn btn-danger" style={{ flex: 1 }} disabled={creditNote && !whole && picked.length === 0}><Icon name="ban" /> {creditNote ? 'ออกใบลดหนี้' : 'ยกเลิกเอกสาร'}</button>
+        <button type="button" className="btn" onClick={() => setOpen(false)}><Icon name="close" /> ปิด</button>
       </div>
     </form>
   );

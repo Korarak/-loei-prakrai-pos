@@ -60,7 +60,7 @@ export default function Staff() {
             <h1 style={{ margin: 0, fontSize: 20 }}>พนักงาน</h1>
             <span className="muted" style={{ fontSize: 14 }}>พนักงานเข้าระบบด้วยการแตะชื่อ + PIN 6 หลัก บนเครื่องที่ลงทะเบียนแล้วเท่านั้น · ผิด 5 ครั้งล็อก 5 นาที</span>
             <span className="spacer" />
-            <button className="btn btn-primary" disabled={!owner} onClick={() => setPanel({ staff: 'new' })}>+ เพิ่มพนักงาน</button>
+            <button className="btn btn-primary" disabled={!owner} onClick={() => setPanel({ staff: 'new' })}><Icon name="plus" /> เพิ่มพนักงาน</button>
           </div>
           <div className="tbl-wrap">
             <table className="tbl">
@@ -115,7 +115,7 @@ export default function Staff() {
             <h2 style={{ margin: 0, fontSize: 20 }}>เครื่องขาย (เลขชุดเอกสาร)</h2>
             <span className="muted" style={{ fontSize: 14 }}>แต่ละเครื่องมีเลขใบกำกับภาษีอย่างย่อของตัวเอง และต้องขอ POS ID จากสรรพากรแยกกัน</span>
             <span className="spacer" />
-            <button className="btn" disabled={!owner} onClick={() => setPanel('terminal')}>+ เพิ่มเครื่องขาย</button>
+            <button className="btn" disabled={!owner} onClick={() => setPanel('terminal')}><Icon name="plus" /> เพิ่มเครื่องขาย</button>
           </div>
           <table className="tbl">
             <thead><tr><th>รหัส</th><th>ชื่อ</th><th>POS ID สรรพากร</th></tr></thead>
@@ -183,7 +183,7 @@ function StaffSheet({ s, onClose, onSaved }: { s: any | 'new'; onClose: () => vo
         </label>
       )}
       {err && <div className="error" role="alert">{err}</div>}
-      <button className="btn btn-primary btn-lg" onClick={save} disabled={!ok}>บันทึก</button>
+      <button className="btn btn-primary btn-lg" onClick={save} disabled={!ok}><Icon name="save" /> บันทึก</button>
     </Sheet>
   );
 }
@@ -209,7 +209,7 @@ function DeviceSheet({ terminals, onClose, onSaved }: { terminals: { id: string;
         </select>
       </label>
       {err && <div className="error" role="alert">{err}</div>}
-      <button className="btn btn-primary btn-lg" onClick={save} disabled={!f.name.trim()}>ลงทะเบียน</button>
+      <button className="btn btn-primary btn-lg" onClick={save} disabled={!f.name.trim()}><Icon name="check" /> ลงทะเบียน</button>
     </Sheet>
   );
 }
@@ -229,7 +229,7 @@ function TerminalSheet({ onClose, onSaved }: { onClose: () => void; onSaved: (ms
       <label className="field">ชื่อเครื่อง<input value={name} onChange={(e) => setName(e.target.value)} placeholder="เช่น เครื่องบาร์น้ำ" autoFocus /></label>
       <p className="muted" style={{ margin: 0, fontSize: 14 }}>ระบบให้รหัส P2, P3… อัตโนมัติ ใช้นำหน้าเลขใบกำกับภาษีอย่างย่อของเครื่องนั้น</p>
       {err && <div className="error" role="alert">{err}</div>}
-      <button className="btn btn-primary btn-lg" onClick={save} disabled={!name.trim()}>เพิ่ม</button>
+      <button className="btn btn-primary btn-lg" onClick={save} disabled={!name.trim()}><Icon name="plus" /> เพิ่ม</button>
     </Sheet>
   );
 }

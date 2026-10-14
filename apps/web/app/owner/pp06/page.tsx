@@ -8,6 +8,7 @@ import { dayLabel, today } from '@/lib/owner';
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
+import { Icon } from '@/lib/icons';
 
 interface Pp06 {
   terminals: { id: string; name: string; code: string; rd_pos_id: string | null; serial_no: string | null; grand_total: number; branch_name: string; branch_code: string }[];
@@ -52,7 +53,7 @@ export default function Pp06Page() {
         <div className="row no-print" style={{ flexWrap: 'wrap' }}>
           <OwnerTabs active="settings" />
           <span className="spacer" />
-          <button className="btn btn-primary" onClick={() => window.print()}>พิมพ์ / PDF</button>
+          <button className="btn btn-primary" onClick={() => window.print()}><Icon name="print" /> พิมพ์ / PDF</button>
         </div>
         <div className="no-print" style={{ maxWidth: 900, padding: '10px 14px', borderRadius: 10, background: 'var(--info-soft)', color: 'var(--info-ink)', fontSize: 14, lineHeight: 1.6 }}>
           ใช้แนบกับแบบคำขออนุมัติใช้เครื่องบันทึกการเก็บเงิน (ภ.พ.06) ที่สำนักงานสรรพากรพื้นที่ · กรอกยี่ห้อ/รุ่นเครื่องและเครื่องพิมพ์

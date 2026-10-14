@@ -4,6 +4,7 @@ import { formatBaht } from '@prakai/core';
 import { Fragment, useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
 import { dayLabel, fmtQty, monthLabel, UNIT } from '@/lib/owner';
+import { Icon } from '@/lib/icons';
 
 interface CardLine { day: string; doc: string | null; text: string; inQty: number; outQty: number; value: number; balance: number; balanceValue: number }
 interface Row {
@@ -52,7 +53,7 @@ export function InventorySection({ month }: { month: string }) {
         <h2 style={{ margin: 0, fontSize: 20 }}>รายงานสินค้าและวัตถุดิบ · {monthLabel(month)}</h2>
         <span className="muted" style={{ fontSize: 14 }}>ยอดยกมา รับ จ่าย คงเหลือ ต่อวัตถุดิบ · แตะแถวเพื่อดูรายการรายวัน</span>
         <span className="spacer" />
-        <button className="btn btn-primary no-print" onClick={csv} disabled={!r?.rows.length}>ดาวน์โหลดทุกรายการ (CSV)</button>
+        <button className="btn btn-primary no-print" onClick={csv} disabled={!r?.rows.length}><Icon name="download" /> ดาวน์โหลดทุกรายการ (CSV)</button>
       </div>
       {err && <div className="error">{err}</div>}
       <div className="tbl-wrap">

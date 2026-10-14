@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api, errText } from '@/lib/api';
+import { Icon } from '@/lib/icons';
 import { Sparkle } from '@/lib/ui';
 
 type LoginResult = { totpRequired: true; challenge: string } | { token: string };
@@ -56,7 +57,7 @@ export default function Login() {
           <label className="field">อีเมล<input name="email" type="email" autoComplete="email" required /></label>
           <label className="field">รหัสผ่าน<input name="password" type="password" autoComplete="current-password" required /></label>
           {err && <div className="error" role="alert">{err}</div>}
-          <button className="btn btn-primary btn-lg" disabled={busy}>{busy ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ'}</button>
+          <button className="btn btn-primary btn-lg" disabled={busy}>{busy ? 'กำลังเข้าสู่ระบบ…' : <><Icon name="key" size={22} /> เข้าสู่ระบบ</>}</button>
           <div className="muted" style={{ textAlign: 'center' }}>ยังไม่มีร้าน? <Link href="/signup">เปิดร้านกับเรา</Link></div>
         </form>
       ) : (
@@ -73,11 +74,11 @@ export default function Login() {
                   style={{ fontSize: 28, letterSpacing: 8, textAlign: 'center' }} />}
           </label>
           {err && <div className="error" role="alert">{err}</div>}
-          <button className="btn btn-primary btn-lg" disabled={busy || (!recovery && code.length !== 6)}>{busy ? 'กำลังตรวจสอบ…' : 'ยืนยัน'}</button>
+          <button className="btn btn-primary btn-lg" disabled={busy || (!recovery && code.length !== 6)}>{busy ? 'กำลังตรวจสอบ…' : <><Icon name="check" size={22} /> ยืนยัน</>}</button>
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <button type="button" className="btn" onClick={() => { setRecovery(!recovery); setCode(''); setErr(''); }}>
               {recovery ? 'ใช้รหัสจากแอป' : 'ไม่มีโทรศัพท์? ใช้รหัสกู้คืน'}</button>
-            <button type="button" className="btn" onClick={() => { setChallenge(null); setCode(''); setErr(''); }}>ย้อนกลับ</button>
+            <button type="button" className="btn" onClick={() => { setChallenge(null); setCode(''); setErr(''); }}><Icon name="back" /> ย้อนกลับ</button>
           </div>
         </form>
       )}

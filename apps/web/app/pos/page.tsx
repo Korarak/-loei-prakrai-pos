@@ -72,7 +72,7 @@ export default function Tables() {
           <div className="error row" role="status">
             <span>เครื่องนี้ยังไม่ได้เปิดกะ ต้องเปิดกะก่อนรับชำระเงิน</span>
             <span className="spacer" />
-            <Link className="btn btn-warn" href="/pos/shift">เปิดกะ</Link>
+            <Link className="btn btn-warn" href="/pos/shift"><Icon name="clock" /> เปิดกะ</Link>
           </div>
         )}
         {err && <div className="error" role="alert">{err}</div>}

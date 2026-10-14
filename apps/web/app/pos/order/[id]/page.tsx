@@ -58,10 +58,10 @@ export default function OrderPage() {
     return (
       <main style={{ padding: 40, display: 'grid', gap: 16, justifyItems: 'start' }}>
         <h1>บิล #{view.order.bill_no} {view.merged_into ? 'ถูกรวมเข้ากับบิลอื่นแล้ว' : 'ปิดแล้ว'}</h1>
-        {view.merged_into && <Link className="btn btn-primary btn-lg" href={`/pos/order/${view.merged_into}`}>ไปที่บิลที่รวมแล้ว</Link>}
-        {view.document && <Link className="btn btn-primary btn-lg" href={`/receipt/${view.document.id}`}>ดูใบเสร็จ</Link>}
+        {view.merged_into && <Link className="btn btn-primary btn-lg" href={`/pos/order/${view.merged_into}`}><Icon name="back" /> ไปที่บิลที่รวมแล้ว</Link>}
+        {view.document && <Link className="btn btn-primary btn-lg" href={`/receipt/${view.document.id}`}><Icon name="receipt" /> ดูใบเสร็จ</Link>}
         {view.parent && <Link className="btn btn-lg" href={`/pos/order/${view.parent.id}`}>กลับไปบิลหลักของโต๊ะ {view.parent.table_name}</Link>}
-        <Link className="btn" href="/pos">กลับผังโต๊ะ</Link>
+        <Link className="btn" href="/pos"><Icon name="back" /> กลับผังโต๊ะ</Link>
       </main>
     );
   }
@@ -170,7 +170,7 @@ export default function OrderPage() {
                         style={{ width: '100%', height: 44, padding: '0 10px', borderRadius: 10, border: '1px solid var(--line-2)' }} />
                     </label>
                     <button className="btn btn-danger" style={{ alignSelf: 'end' }}><Icon name="ban" /> ยืนยันยกเลิกรายการ</button>
-                    <button type="button" className="btn" style={{ alignSelf: 'end' }} onClick={() => setVoiding(null)}>ไม่ยกเลิก</button>
+                    <button type="button" className="btn" style={{ alignSelf: 'end' }} onClick={() => setVoiding(null)}><Icon name="close" /> ไม่ยกเลิก</button>
                   </form>
                 )}
               </div>
@@ -203,8 +203,8 @@ export default function OrderPage() {
           {err && <div className="error" role="alert" style={{ margin: '8px 20px 0' }}>{err}</div>}
           {(batch || hasSent) && (
             <div className="row" style={{ padding: '10px 20px 0', gap: 8 }}>
-              {batch && <Link className="btn btn-outline" style={{ flex: 1 }} href={`/kitchen/${id}?at=${encodeURIComponent(batch)}`}>พิมพ์ใบสั่งครัวรอบนี้</Link>}
-              <Link className="btn" style={{ flex: batch ? undefined : 1 }} href={`/kitchen/${id}`}>พิมพ์ซ้ำทั้งโต๊ะ</Link>
+              {batch && <Link className="btn btn-outline" style={{ flex: 1 }} href={`/kitchen/${id}?at=${encodeURIComponent(batch)}`}><Icon name="print" /> พิมพ์ใบสั่งครัวรอบนี้</Link>}
+              <Link className="btn" style={{ flex: batch ? undefined : 1 }} href={`/kitchen/${id}`}><Icon name="print" /> พิมพ์ซ้ำทั้งโต๊ะ</Link>
             </div>
           )}
           <div className="row order-actions" style={{ gap: 10 }}>

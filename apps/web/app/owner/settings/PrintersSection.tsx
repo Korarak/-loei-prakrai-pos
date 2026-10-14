@@ -81,7 +81,7 @@ export function PrintersSection({ me }: { me: Me }) {
                 <td className="muted">{p.role === 'receipt' ? (me.terminals.find((t) => t.id === p.terminal_id)?.code ?? 'ทุกเครื่อง') : '—'}</td>
                 <td>{p.kick_drawer ? 'เปิดลิ้นชัก' : '—'}</td>
                 <td style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>
-                  <button className="btn" style={{ minHeight: 40 }} disabled={!p.active} onClick={() => test(p)}>ทดสอบ</button>{' '}
+                  <button className="btn" style={{ minHeight: 40 }} disabled={!p.active} onClick={() => test(p)}><Icon name="print" /> ทดสอบ</button>{' '}
                   {canEdit && <button className="btn" style={{ minHeight: 40 }}
                     onClick={() => run(() => api('PATCH', `/api/printers/${p.id}`, { active: !p.active }), p.active ? `ปิดใช้ ${p.name} แล้ว` : `เปิดใช้ ${p.name} แล้ว`)}>
                     {p.active ? 'ปิดใช้' : 'เปิดใช้'}</button>}
@@ -127,7 +127,7 @@ export function PrintersSection({ me }: { me: Me }) {
               <input type="checkbox" checked={add.kickDrawer} onChange={(e) => setAdd({ ...add, kickDrawer: e.target.checked })} style={{ width: 22, height: 22 }} />
               ต่อลิ้นชักเก็บเงิน</label>
           )}
-          <button className="btn btn-outline" style={{ minHeight: 50 }} disabled={!add.name.trim() || !hostOk}>เพิ่มเครื่องพิมพ์</button>
+          <button className="btn btn-outline" style={{ minHeight: 50 }} disabled={!add.name.trim() || !hostOk}><Icon name="plus" /> เพิ่มเครื่องพิมพ์</button>
         </form>
       )}
 
@@ -149,7 +149,7 @@ export function PrintersSection({ me }: { me: Me }) {
           }}>
             <label className="field" style={{ width: 220 }}>ชื่อคอมพิวเตอร์
               <input value={agentName} onChange={(e) => setAgentName(e.target.value)} required /></label>
-            <button className="btn btn-outline" style={{ minHeight: 50 }} disabled={!agentName.trim()}>สร้างรหัสสำหรับโปรแกรมพิมพ์</button>
+            <button className="btn btn-outline" style={{ minHeight: 50 }} disabled={!agentName.trim()}><Icon name="key" /> สร้างรหัสสำหรับโปรแกรมพิมพ์</button>
           </form>
           {newToken && (
             <div style={{ padding: 12, borderRadius: 10, background: 'var(--info-soft)', color: 'var(--info-ink)', fontSize: 14, display: 'grid', gap: 6 }}>
