@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
+import { Icon } from '@/lib/icons';
 import { Sheet } from '@/lib/owner';
 import { TablesSection } from '../owner/settings/TablesSection';
 import { terminalFor, useMe } from '@/lib/useMe';
@@ -64,8 +65,8 @@ export default function Tables() {
           <h1 style={{ margin: 0, fontSize: 26 }}>ผังโต๊ะ</h1>
           <span className="muted">ว่าง {(tables?.length ?? 0) - busy} · มีลูกค้า {busy}</span>
           <span className="spacer" />
-          {canManage && <button className="btn" onClick={() => setManaging(true)}>จัดการโต๊ะ</button>}
-          <button className="btn btn-primary btn-lg" onClick={() => open(null)}>+ ออเดอร์กลับบ้าน</button>
+          {canManage && <button className="btn" onClick={() => setManaging(true)}><Icon name="edit" /> จัดการโต๊ะ</button>}
+          <button className="btn btn-primary btn-lg" onClick={() => open(null)}><Icon name="plus" size={22} /> ออเดอร์กลับบ้าน</button>
         </div>
         {noShift && (
           <div className="error row" role="status">
@@ -100,14 +101,14 @@ export default function Tables() {
           {canManage && tables && (
             <button onClick={addNext} aria-label="เพิ่มโต๊ะ"
               style={{ minHeight: 150, borderRadius: 16, border: '2px dashed #A9B2A8', background: 'transparent', color: 'var(--muted)', fontSize: 18, fontWeight: 600 }}>
-              + เพิ่มโต๊ะ
+              <Icon name="plus" size={22} /> เพิ่มโต๊ะ
             </button>
           )}
         </div>
         {tables?.length === 0 && <p className="muted">{canManage ? 'ยังไม่มีโต๊ะ แตะ “+ เพิ่มโต๊ะ” ได้เลย หรือใช้ปุ่มออเดอร์กลับบ้าน' : 'ยังไม่มีโต๊ะ ใช้ปุ่มออเดอร์กลับบ้านได้เลย'}</p>}
       </main>
       {managing && (
-        <Sheet title="จัดการโต๊ะ" onClose={() => { setManaging(false); load(); }} wide>
+        <Sheet title="จัดการโต๊ะ" onClose={() => { setManaging(false); load(); }} wide noConfirm>
           <TablesSection canEdit={canManage} bare onChanged={load} />
         </Sheet>
       )}

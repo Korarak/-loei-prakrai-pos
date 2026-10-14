@@ -1,5 +1,9 @@
 'use client';
 
+import { useRef } from 'react';
+import { useConfirm } from './dialog';
+import { Icon } from './icons';
+
 /** Bangkok calendar month, e.g. 2026-09 — tax and cost periods follow Thai time. */
 export const thisMonth = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date()).slice(0, 7);
 export const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date());
@@ -40,17 +44,28 @@ export function Stat({ label, value, tone }: { label: string; value: React.React
   );
 }
 
-/** Right-hand panel for forms, so the list stays visible behind it. */
-export function Sheet({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
+/**
+ * Right-hand panel for forms, so the list stays visible behind it.
+ * Typing or toggling anything inside marks it unsaved; closing it then asks first (pass `noConfirm` for search-only panels).
+ */
+export function Sheet({ title, onClose, children, wide, noConfirm }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean; noConfirm?: boolean }) {
+  const dirty = useRef(false);
+  const confirm = useConfirm();
+  async function close() {
+    if (dirty.current && !noConfirm && !(await confirm({ title: 'ปิดโดยไม่บันทึก?', body: 'ข้อมูลที่แก้ไว้จะหายไป', confirm: 'ปิดโดยไม่บันทึก', cancel: 'กลับไปแก้ต่อ', tone: 'danger', icon: 'close' }))) return;
+    onClose();
+  }
   return (
-    <div role="dialog" aria-modal="true" aria-label={title} onClick={onClose}
+    <div role="dialog" aria-modal="true" aria-label={title} onClick={close}
       style={{ position: 'fixed', inset: 0, background: 'rgba(20,24,22,.35)', zIndex: 20, display: 'flex', justifyContent: 'flex-end' }}>
       <div onClick={(e) => e.stopPropagation()} className="sheet"
+        onInputCapture={() => { dirty.current = true; }}
+        onClickCapture={(e) => { if ((e.target as HTMLElement).closest('[aria-pressed]')) dirty.current = true; }}
         style={{ width: wide ? 'min(760px, 100%)' : 'min(520px, 100%)', background: 'var(--surface)', height: '100%', overflowY: 'auto', padding: 20, display: 'grid', gap: 14, alignContent: 'start' }}>
         <div className="row">
           <h2 style={{ margin: 0, fontSize: 21 }}>{title}</h2>
           <span className="spacer" />
-          <button className="btn" onClick={onClose} aria-label="ปิด">ปิด</button>
+          <button className="btn" onClick={close} aria-label="ปิด"><Icon name="close" /> ปิด</button>
         </div>
         {children}
       </div>

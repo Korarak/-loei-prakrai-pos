@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
+import { useConfirm } from '@/lib/dialog';
+import { Icon } from '@/lib/icons';
 
 interface Row { id: string; name: string; seats: number; order_id: string | null }
 
@@ -9,6 +11,7 @@ const small: React.CSSProperties = { height: 44, borderRadius: 10, border: '1px 
 
 /** Floor plan: how many tables, their names and seats. Saved per action, separate from the tax settings. */
 export function TablesSection({ canEdit, bare, onChanged }: { canEdit: boolean; bare?: boolean; onChanged?: () => void }) {
+  const confirm = useConfirm();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [edit, setEdit] = useState<Record<string, { name: string; seats: string }>>({});
   const [count, setCount] = useState('');
@@ -67,10 +70,10 @@ export function TablesSection({ canEdit, bare, onChanged }: { canEdit: boolean; 
                   {dirty(t) && (
                     <button className="btn btn-primary" style={{ minHeight: 40, marginRight: 8 }}
                       disabled={!edit[t.id]!.name.trim() || !(Number(edit[t.id]!.seats) >= 1 && Number(edit[t.id]!.seats) <= 50)}
-                      onClick={() => run(() => api('PATCH', `/api/tables/${t.id}`, { name: edit[t.id]!.name.trim(), seats: Number(edit[t.id]!.seats) }), `บันทึกโต๊ะ ${edit[t.id]!.name.trim()} แล้ว`)}>บันทึก</button>
+                      onClick={() => run(() => api('PATCH', `/api/tables/${t.id}`, { name: edit[t.id]!.name.trim(), seats: Number(edit[t.id]!.seats) }), `บันทึกโต๊ะ ${edit[t.id]!.name.trim()} แล้ว`)}><Icon name="check" /> บันทึก</button>
                   )}
                   <button className="btn btn-warn" style={{ minHeight: 40 }} disabled={!canEdit || !!t.order_id} title={t.order_id ? 'ปิดบิลก่อนจึงลบได้' : undefined}
-                    onClick={() => run(() => api('DELETE', `/api/tables/${t.id}`), `ลบโต๊ะ ${t.name} แล้ว`)}>ลบ</button>
+                    onClick={async () => { if (await confirm({ title: `ลบโต๊ะ ${t.name}?`, body: 'ประวัติบิลเก่ายังอยู่ครบ', confirm: 'ลบโต๊ะ', tone: 'danger' })) run(() => api('DELETE', `/api/tables/${t.id}`), `ลบโต๊ะ ${t.name} แล้ว`); }}><Icon name="trash" /> ลบ</button>
                 </td>
               </tr>
             ))}
@@ -82,7 +85,7 @@ export function TablesSection({ canEdit, bare, onChanged }: { canEdit: boolean; 
         <label className="field" style={{ width: 200 }}>เพิ่มโต๊ะชื่อ<input value={add.name} maxLength={20} placeholder="เช่น VIP, ระเบียง 1" disabled={!canEdit} onChange={(e) => setAdd({ ...add, name: e.target.value })} /></label>
         <label className="field" style={{ width: 110 }}>ที่นั่ง<input type="number" min={1} max={50} value={add.seats} disabled={!canEdit} onChange={(e) => setAdd({ ...add, seats: e.target.value })} /></label>
         <button className="btn btn-primary" style={{ minHeight: 50 }} disabled={!canEdit || !add.name.trim() || !(Number(add.seats) >= 1 && Number(add.seats) <= 50)}
-          onClick={() => run(async () => { await api('POST', '/api/tables', { name: add.name.trim(), seats: Number(add.seats) }); setAdd({ name: '', seats: '4' }); }, `เพิ่มโต๊ะ ${add.name.trim()} แล้ว`)}>+ เพิ่มโต๊ะ</button>
+          onClick={() => run(async () => { await api('POST', '/api/tables', { name: add.name.trim(), seats: Number(add.seats) }); setAdd({ name: '', seats: '4' }); }, `เพิ่มโต๊ะ ${add.name.trim()} แล้ว`)}><Icon name="plus" /> เพิ่มโต๊ะ</button>
       </div>
       {err && <div className="error" role="alert">{err}</div>}
       {msg && <div role="status" style={{ color: 'var(--accent-ink)', fontWeight: 600 }}>{msg}</div>}

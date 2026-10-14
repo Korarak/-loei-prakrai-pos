@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, errText } from '@/lib/api';
+import { Icon } from '@/lib/icons';
 import { BackIcon, BowlIcon, tintFor } from '@/lib/ui';
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../TopBar';
@@ -157,7 +158,7 @@ export default function OrderPage() {
                         onClick={() => run(() => api('PATCH', `/api/orders/${id}/lines/${l.id}`, { qty: l.qty + 1 }))}>+</button>
                     </div>
                   ) : (
-                    <button className="btn btn-warn" style={{ minHeight: 44 }} onClick={() => { setVoiding(l.id); setReason(''); }}>ยกเลิก ×{l.qty}</button>
+                    <button className="btn btn-warn" style={{ minHeight: 44 }} onClick={() => { setVoiding(l.id); setReason(''); }}><Icon name="ban" /> ยกเลิก ×{l.qty}</button>
                   )}
                   <div style={{ width: 80, textAlign: 'right', fontSize: 18, fontWeight: 700 }}>{formatBaht(l.unit_price * l.qty)}</div>
                 </div>
@@ -168,8 +169,8 @@ export default function OrderPage() {
                       <input value={reason} onChange={(e) => setReason(e.target.value)} required minLength={3} autoFocus
                         style={{ width: '100%', height: 44, padding: '0 10px', borderRadius: 10, border: '1px solid var(--line-2)' }} />
                     </label>
-                    <button className="btn btn-warn" style={{ alignSelf: 'end' }}>ยืนยัน</button>
-                    <button type="button" className="btn" style={{ alignSelf: 'end' }} onClick={() => setVoiding(null)}>ปิด</button>
+                    <button className="btn btn-danger" style={{ alignSelf: 'end' }}><Icon name="ban" /> ยืนยันยกเลิกรายการ</button>
+                    <button type="button" className="btn" style={{ alignSelf: 'end' }} onClick={() => setVoiding(null)}>ไม่ยกเลิก</button>
                   </form>
                 )}
               </div>
@@ -208,10 +209,10 @@ export default function OrderPage() {
           )}
           <div className="row order-actions" style={{ gap: 10 }}>
             <button className="btn btn-outline btn-lg" style={{ width: 132 }} disabled={!hasNew}
-              onClick={() => run(async () => setBatch((await api('POST', `/api/orders/${id}/send`)).sentAt))}>ส่งครัว</button>
+              onClick={() => run(async () => setBatch((await api('POST', `/api/orders/${id}/send`)).sentAt))}><Icon name="send" size={22} /> ส่งครัว</button>
             <button className="btn btn-primary btn-lg" style={{ flex: 1 }} disabled={live.length === 0 || !canPay}
               title={canPay ? undefined : 'พนักงานเสิร์ฟรับชำระเงินไม่ได้ ให้แคชเชียร์รับ'}
-              onClick={() => router.push(`/pos/order/${id}/pay`)}>ชำระเงิน</button>
+              onClick={() => router.push(`/pos/order/${id}/pay`)}><Icon name="wallet" size={24} /> ชำระเงิน</button>
           </div>
         </aside>
       </div>

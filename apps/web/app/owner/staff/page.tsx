@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
+import { useConfirm } from '@/lib/dialog';
+import { Icon } from '@/lib/icons';
 import { Sheet } from '@/lib/owner';
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
@@ -22,6 +24,7 @@ const pinOk = (p: string) => /^\d{6}$/.test(p) && !pinWeak(p);
 type Panel = null | { staff: any | 'new' } | 'device' | 'terminal';
 
 export default function Staff() {
+  const confirm = useConfirm();
   const { me, reload } = useMe();
   const [staff, setStaff] = useState<any[] | null>(null);
   const [devices, setDevices] = useState<any[]>([]);
@@ -38,6 +41,7 @@ export default function Staff() {
   const termName = (id: string | null) => me?.terminals.find((t) => t.id === id)?.name ?? 'ไม่ผูก';
 
   async function revoke(d: any) {
+    if (!(await confirm({ title: `ยกเลิกเครื่อง ${d.name}?`, body: 'เครื่องนี้จะเข้าด้วย PIN ไม่ได้อีก', confirm: 'ยกเลิกเครื่อง', tone: 'danger' }))) return;
     setErr(''); setMsg('');
     try { await api('POST', `/api/devices/${d.id}/revoke`); done(`ยกเลิกเครื่อง ${d.name} แล้ว`); } catch (e) { setErr(errText(e)); }
   }
@@ -97,7 +101,7 @@ export default function Staff() {
                     <td className="muted">{when(d.last_seen_at)}</td>
                     <td className="muted">{d.created_by_name ?? ''} · {when(d.created_at)}</td>
                     <td className="num">{d.revoked_at ? <span className="muted">ยกเลิกแล้ว</span>
-                      : <button className="btn btn-warn" style={{ minHeight: 40 }} disabled={!owner} onClick={() => revoke(d)}>ยกเลิกเครื่อง</button>}</td>
+                      : <button className="btn btn-warn" style={{ minHeight: 40 }} disabled={!owner} onClick={() => revoke(d)}><Icon name="ban" /> ยกเลิกเครื่อง</button>}</td>
                   </tr>
                 ))}
               </tbody>

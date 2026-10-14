@@ -3,6 +3,7 @@
 import { formatBaht, valueOf } from '@prakai/core';
 import { useMemo, useState } from 'react';
 import { api, errText } from '@/lib/api';
+import { Icon } from '@/lib/icons';
 import { Sheet, toSatang, UNIT } from '@/lib/owner';
 
 export interface PickRow { id: string; label: string; sub?: string; right?: string; group?: string }
@@ -17,7 +18,7 @@ export function PickSheet({ title, rows, onPick, onClose, footer, placeholder = 
     return n ? rows.filter((r) => `${r.label} ${r.sub ?? ''} ${r.group ?? ''}`.toLowerCase().includes(n)) : rows;
   }, [q, rows]);
   return (
-    <Sheet title={title} onClose={onClose}>
+    <Sheet title={title} onClose={onClose} noConfirm>
       <input aria-label="ค้นหา" autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={placeholder}
         onKeyDown={(e) => { if (e.key === 'Enter' && shown.length === 1) onPick(shown[0]!.id); }}
         style={{ height: 52, borderRadius: 12, border: '1px solid #c9cfc7', padding: '0 14px', fontSize: 17 }} />
@@ -55,7 +56,7 @@ export function IngredientPicker({ ings, onPick, onClose, onCreate }: {
   })).sort((a, b) => a.group!.localeCompare(b.group!, 'th'));
   return (
     <PickSheet title="เลือกวัตถุดิบ" rows={rows} onPick={onPick} onClose={onClose} placeholder="ค้นหา เช่น หมู, ไข่, เบียร์…"
-      footer={<button className="btn btn-outline" onClick={onCreate}>+ ไม่มีในรายการ? สร้างวัตถุดิบใหม่</button>} />
+      footer={<button className="btn btn-outline" onClick={onCreate}><Icon name="plus" /> ไม่มีในรายการ? สร้างวัตถุดิบใหม่</button>} />
   );
 }
 

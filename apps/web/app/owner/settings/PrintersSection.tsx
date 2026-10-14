@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
+import { useConfirm } from '@/lib/dialog';
+import { Icon } from '@/lib/icons';
 import { agentOnline, printTicket, thaiDateTime, usePrinters, type Printer } from '@/lib/print';
 import type { Me } from '@/lib/useMe';
 
@@ -13,6 +15,7 @@ interface Agent { id: string; name: string; created_at: string; last_seen_at: st
 
 /** เครื่องพิมพ์ LAN (ESC/POS) และโปรแกรมพิมพ์ในร้าน (print agent) ที่ส่งงานต่อให้เครื่องพิมพ์ */
 export function PrintersSection({ me }: { me: Me }) {
+  const confirm = useConfirm();
   const { list, reload } = usePrinters();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [add, setAdd] = useState(blank);
@@ -169,7 +172,7 @@ export function PrintersSection({ me }: { me: Me }) {
                     <td>{a.name}</td>
                     <td className="muted">{a.revoked_at ? 'ยกเลิกแล้ว' : a.last_seen_at ? thaiDateTime(a.last_seen_at) : 'ยังไม่เคยเชื่อมต่อ'}</td>
                     <td style={{ textAlign: 'right' }}>{!a.revoked_at && <button className="btn btn-warn" style={{ minHeight: 40 }}
-                      onClick={() => run(() => api('POST', `/api/print-agents/${a.id}/revoke`), `ยกเลิกรหัสของ ${a.name} แล้ว`)}>ยกเลิกรหัส</button>}</td>
+                      onClick={async () => { if (await confirm({ title: `ยกเลิกรหัสของ ${a.name}?`, body: 'โปรแกรมพิมพ์เครื่องนั้นจะหยุดทำงาน', confirm: 'ยกเลิกรหัส', tone: 'danger' })) run(() => api('POST', `/api/print-agents/${a.id}/revoke`), `ยกเลิกรหัสของ ${a.name} แล้ว`); }}><Icon name="ban" /> ยกเลิกรหัส</button>}</td>
                   </tr>
                 ))}
               </tbody>

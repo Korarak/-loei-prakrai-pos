@@ -3,6 +3,8 @@
 import { formatBaht } from '@prakai/core';
 import { useCallback, useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
+import { useConfirm } from '@/lib/dialog';
+import { Icon } from '@/lib/icons';
 import { Sheet, Stat } from '@/lib/owner';
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../pos/TopBar';
@@ -118,6 +120,7 @@ export default function Platform() {
 }
 
 function Detail({ id, onClose, onChanged }: { id: string; onClose: () => void; onChanged: () => void }) {
+  const confirm = useConfirm();
   const [d, setD] = useState<any>(null);
   const [note, setNote] = useState('');
   const [err, setErr] = useState('');
@@ -140,12 +143,12 @@ function Detail({ id, onClose, onChanged }: { id: string; onClose: () => void; o
   const u = d?.usage;
   const Btn = ({ to, label, tone }: { to: string; label: string; tone?: 'warn' }) => (
     <button className={`btn ${tone === 'warn' ? 'btn-warn' : ''}`} disabled={t?.status === to}
-      onClick={() => { if (to !== 'suspended' && to !== 'closed') return patch({ status: to }, `เปลี่ยนเป็น “${STATUS[to]!.label}” แล้ว`);
-        if (window.confirm(`${label} ร้าน ${t.name}? พนักงานทุกคนจะเข้าใช้งานไม่ได้ทันที`)) patch({ status: to }, `เปลี่ยนเป็น “${STATUS[to]!.label}” แล้ว`); }}>{label}</button>
+      onClick={async () => { if (to !== 'suspended' && to !== 'closed') return patch({ status: to }, `เปลี่ยนเป็น “${STATUS[to]!.label}” แล้ว`);
+        if (await confirm({ title: `${label} ร้าน ${t.name}?`, body: 'พนักงานทุกคนจะเข้าใช้งานไม่ได้ทันที', confirm: label, tone: 'danger', icon: 'ban' })) patch({ status: to }, `เปลี่ยนเป็น “${STATUS[to]!.label}” แล้ว`); }}>{tone === 'warn' && <Icon name="ban" />}{label}</button>
   );
 
   return (
-    <Sheet title={t?.name ?? 'รายละเอียดร้าน'} onClose={onClose} wide>
+    <Sheet title={t?.name ?? 'รายละเอียดร้าน'} onClose={onClose} wide noConfirm>
       {err && <div className="error" role="alert">{err}</div>}
       {msg && <div role="status" style={{ color: 'var(--accent-ink)', fontWeight: 600 }}>{msg}</div>}
       {t && <>

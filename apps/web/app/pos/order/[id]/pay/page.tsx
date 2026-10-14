@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
+import { Icon } from '@/lib/icons';
 import { BackIcon } from '@/lib/ui';
 import { PromptPayQr } from '@/lib/PromptPayQr';
 import { terminalFor, useMe } from '@/lib/useMe';
@@ -185,7 +186,7 @@ export default function PayPage() {
           <span className="spacer" />
           {err && <div className="error" role="alert">{err}</div>}
           <button className="btn btn-primary" style={{ height: 72, fontSize: 21, borderRadius: 16 }} disabled={busy || (cashShort && got > 0)} onClick={confirm}>
-            {busy ? 'กำลังบันทึก…' : 'ยืนยันรับชำระ'}
+            {busy ? 'กำลังบันทึก…' : <><Icon name="check" size={26} /> ยืนยันรับชำระ</>}
           </button>
         </section>
       </div>

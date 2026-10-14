@@ -3,6 +3,8 @@
 import { formatBaht } from '@prakai/core';
 import { useCallback, useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
+import { useConfirm } from '@/lib/dialog';
+import { Icon } from '@/lib/icons';
 import { terminalFor, useMe } from '@/lib/useMe';
 import { TopBar } from '../TopBar';
 
@@ -25,6 +27,7 @@ interface Summary {
 
 /** เปิดกะ · นำเงินเข้า–ออก · ปิดกะนับเงิน (X/Z report ของกะ) สำหรับเครื่องขายนี้ */
 export default function ShiftPage() {
+  const confirm = useConfirm();
   const { me } = useMe();
   const terminal = me ? terminalFor(me) : null;
   const [cur, setCur] = useState<Summary | null | undefined>(undefined);
@@ -55,7 +58,7 @@ export default function ShiftPage() {
             <h1 style={{ margin: 0, fontSize: 24 }}>{closed ? 'สรุปปิดกะ (Z)' : 'กะปัจจุบัน (X)'}</h1>
             <span className="muted">{terminal ? `เครื่อง ${terminal.name} (${terminal.code})` : ''}</span>
             <span className="spacer" />
-            {report && <button className="btn no-print" onClick={() => window.print()}>พิมพ์</button>}
+            {report && <button className="btn no-print" onClick={() => window.print()}><Icon name="print" /> พิมพ์</button>}
           </div>
           {cur === undefined && !closed && <p className="muted">กำลังโหลด…</p>}
           {cur === null && !closed && <p className="muted">เครื่องนี้ยังไม่ได้เปิดกะ ต้องเปิดกะก่อนจึงรับชำระเงินได้</p>}
@@ -73,7 +76,7 @@ export default function ShiftPage() {
               <b style={{ fontSize: 18 }}>เปิดกะ</b>
               <label><span className="muted">เงินทอนตั้งต้นในลิ้นชัก (บาท)</span>
                 <input style={input} inputMode="decimal" value={float} onChange={(e) => setFloat(e.target.value)} required /></label>
-              <button className="btn btn-primary btn-lg">เปิดกะ</button>
+              <button className="btn btn-primary btn-lg"><Icon name="clock" size={22} /> เปิดกะ</button>
             </form>
           )}
           {!closed && cur && <>
@@ -99,9 +102,10 @@ export default function ShiftPage() {
             </form>
 
             <form className="card" style={{ padding: 16, display: 'grid', gap: 10 }}
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
                 setErr('');
+                if (!(await confirm({ title: 'ปิดกะ?', body: `นับเงินสดได้ ${counted} บาท ปิดแล้วรับเงินต่อไม่ได้จนกว่าจะเปิดกะใหม่`, confirm: 'ปิดกะ', icon: 'clock' }))) return;
                 api<Summary>('POST', `/api/shifts/${cur.shift.id}/close`, { countedCash: toSatang(counted), note: note || undefined })
                   .then((z) => { setClosed(z); setCur(null); }).catch((x) => setErr(errText(x)));
               }}>
@@ -113,7 +117,7 @@ export default function ShiftPage() {
               )}
               <label><span className="muted">หมายเหตุ (ถ้าเงินขาด/เกิน)</span>
                 <input style={{ ...input, fontSize: 16 }} value={note} onChange={(e) => setNote(e.target.value)} /></label>
-              <button className="btn btn-primary btn-lg">ปิดกะและพิมพ์สรุป</button>
+              <button className="btn btn-primary btn-lg"><Icon name="clock" size={22} /> ปิดกะและพิมพ์สรุป</button>
             </form>
           </>}
         </aside>

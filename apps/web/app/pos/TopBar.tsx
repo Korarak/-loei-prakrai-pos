@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { useConfirm } from '@/lib/dialog';
+import { Icon } from '@/lib/icons';
 import { Brand } from '@/lib/ui';
 import type { Me } from '@/lib/useMe';
 
@@ -10,6 +12,13 @@ const ROLE: Record<string, string> = { owner: 'เจ้าของ', manager: 
 
 export function TopBar({ me, active, children }: { me: Me | null; active?: 'tables' | 'shift' | 'owner' | 'platform'; children?: React.ReactNode }) {
   const router = useRouter();
+  const confirm = useConfirm();
+  async function leave(to: '/login' | '/pin') {
+    const swap = to === '/pin';
+    if (!(await confirm({ title: swap ? 'สลับผู้ใช้?' : 'ออกจากระบบ?', body: swap ? 'เครื่องนี้จะกลับไปหน้าใส่ PIN' : 'บิลที่ค้างอยู่ยังอยู่ครบ กลับมาเข้าใหม่ได้', confirm: swap ? 'สลับผู้ใช้' : 'ออกจากระบบ', icon: swap ? 'switch' : 'logout' }))) return;
+    await api('POST', '/api/auth/logout');
+    router.push(to);
+  }
   const tab = (on: boolean): React.CSSProperties => ({
     height: 48, display: 'flex', alignItems: 'center', padding: '0 18px', borderRadius: 12, fontSize: 17,
     background: on ? 'var(--accent-soft)' : 'transparent', color: on ? 'var(--accent-ink)' : 'var(--ink)', fontWeight: on ? 600 : 500,
@@ -28,9 +37,9 @@ export function TopBar({ me, active, children }: { me: Me | null; active?: 'tabl
       {me && <span className="muted topbar-user" style={{ fontSize: 15 }}>{me.tenant.name} · <b style={{ color: 'var(--ink)' }}>{me.user.name}</b> ({ROLE[me.role]})</span>}
       {me?.device ? (
         // A shared till: hand over to the next person instead of signing the shop out.
-        <button className="btn btn-outline" onClick={async () => { await api('POST', '/api/auth/logout'); router.push('/pin'); }}>สลับผู้ใช้</button>
+        <button className="btn btn-outline" onClick={() => leave('/pin')}><Icon name="switch" /> สลับผู้ใช้</button>
       ) : (
-        <button className="btn" onClick={async () => { await api('POST', '/api/auth/logout'); router.push('/login'); }}>ออก</button>
+        <button className="btn" onClick={() => leave('/login')}><Icon name="logout" /> ออก</button>
       )}
     </header>
   );

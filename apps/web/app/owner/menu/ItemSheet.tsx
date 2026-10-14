@@ -3,6 +3,7 @@
 import { formatBaht, pct, valueOf } from '@prakai/core';
 import { useEffect, useMemo, useState } from 'react';
 import { api, errText, uploadMenuImage } from '@/lib/api';
+import { Icon } from '@/lib/icons';
 import { Sheet, toSatang, UNIT } from '@/lib/owner';
 import { BowlIcon, tintFor } from '@/lib/ui';
 import { IngredientPicker, NewIngredientSheet, PickSheet } from './Pickers';
@@ -168,14 +169,14 @@ export function ItemSheet({ item, ings, cats, groups, items, vatRatio, onClose, 
                     <span className="muted" style={{ width: 40 }}>{ing ? UNIT[ing.base_unit] : ''}</span>
                   </span>
                   <span style={{ width: 70, textAlign: 'right', fontWeight: 600 }}>{ing ? formatBaht(lineCost(ing, Number(l.qty))) : ''}</span>
-                  <button className="btn" style={{ minHeight: 40, padding: '0 12px' }} aria-label="ลบบรรทัด" onClick={() => setLines(rows.filter((_, k) => k !== i))}>✕</button>
+                  <button className="btn" style={{ minHeight: 40, padding: '0 12px' }} aria-label="ลบบรรทัด" onClick={() => setLines(rows.filter((_, k) => k !== i))}><Icon name="trash" /></button>
                   {ing && ing.yield_pct < 100 && <span className="muted" style={{ fontSize: 12, flexBasis: '100%' }}>yield {ing.yield_pct}%</span>}
                 </div>
               );
             })}
             <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
-              <button className="btn btn-outline" onClick={() => setPicker({ kind: 'ing', at: null })}>+ เพิ่มวัตถุดิบ</button>
-              <button className="btn" onClick={() => setPicker({ kind: 'copy' })}>คัดลอกสูตรจากเมนูอื่น</button>
+              <button className="btn btn-outline" onClick={() => setPicker({ kind: 'ing', at: null })}><Icon name="plus" /> เพิ่มวัตถุดิบ</button>
+              <button className="btn" onClick={() => setPicker({ kind: 'copy' })}><Icon name="copy" /> คัดลอกสูตรจากเมนูอื่น</button>
             </div>
           </div>
         )}
@@ -192,7 +193,7 @@ export function ItemSheet({ item, ings, cats, groups, items, vatRatio, onClose, 
         </div>
         {err && <div className="error" role="alert">{err}</div>}
         <button className="btn btn-primary btn-lg" onClick={save} disabled={!valid || busy}>
-          {busy ? 'กำลังบันทึก…' : item || savedId ? 'บันทึก' : 'เพิ่มเมนู'}
+          {busy ? 'กำลังบันทึก…' : <><Icon name={item || savedId ? 'save' : 'plus'} size={22} /> {item || savedId ? 'บันทึก' : 'เพิ่มเมนู'}</>}
         </button>
         {!valid && !busy && <div className="muted" style={{ fontSize: 14 }}>{!name.trim() ? 'ใส่ชื่อเมนู' : !Number.isFinite(newPrice) ? 'ใส่ราคาขาย' : 'วัตถุดิบทุกบรรทัดต้องมีปริมาณ'}</div>}
       </Sheet>

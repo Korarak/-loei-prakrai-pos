@@ -3,6 +3,8 @@
 import { formatBaht } from '@prakai/core';
 import { useEffect, useMemo, useState } from 'react';
 import { api, errText } from '@/lib/api';
+import { useConfirm } from '@/lib/dialog';
+import { Icon } from '@/lib/icons';
 import { Sheet, Stat } from '@/lib/owner';
 import { BowlIcon, tintFor } from '@/lib/ui';
 import { useMe } from '@/lib/useMe';
@@ -62,8 +64,8 @@ export default function MenuCosting() {
             <h1 style={{ margin: 0, fontSize: 20 }}>เมนูและต้นทุน</h1>
             <span className="muted" style={{ fontSize: 14 }}>แตะเมนูเพื่อแก้</span>
             <span className="spacer" />
-            <button className="btn" onClick={() => setManagingCats(true)}>จัดการหมวด</button>
-            <button className="btn btn-primary" onClick={() => setAdding(true)}>+ เพิ่มเมนู</button>
+            <button className="btn" onClick={() => setManagingCats(true)}><Icon name="edit" /> จัดการหมวด</button>
+            <button className="btn btn-primary" onClick={() => setAdding(true)}><Icon name="plus" /> เพิ่มเมนู</button>
           </div>
           <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
             <input aria-label="ค้นหาเมนู" placeholder="ค้นหาเมนู" value={q} onChange={(e) => setQ(e.target.value)}
@@ -122,6 +124,7 @@ export default function MenuCosting() {
 }
 
 function CategorySheet({ cats, items, onClose, onChanged }: { cats: any[]; items: any[]; onClose: () => void; onChanged: (c: any[]) => void }) {
+  const confirm = useConfirm();
   const [names, setNames] = useState<Record<string, string>>(Object.fromEntries(cats.map((c) => [c.id, c.name])));
   const [add, setAdd] = useState('');
   const [err, setErr] = useState('');
@@ -134,7 +137,7 @@ function CategorySheet({ cats, items, onClose, onChanged }: { cats: any[]; items
   const count = (id: string) => items.filter((i) => i.category_id === id).length;
 
   return (
-    <Sheet title="หมวดเมนู" onClose={onClose}>
+    <Sheet title="หมวดเมนู" onClose={onClose} noConfirm>
       <div className="muted" style={{ fontSize: 14 }}>ลำดับหมวดที่นี่คือลำดับที่แสดงบนหน้าขาย</div>
       <table className="tbl">
         <tbody>
@@ -145,14 +148,14 @@ function CategorySheet({ cats, items, onClose, onChanged }: { cats: any[]; items
               <td className="muted num" style={{ fontSize: 13 }}>{count(c.id)} เมนู</td>
               <td className="num" style={{ whiteSpace: 'nowrap' }}>
                 {names[c.id]?.trim() && names[c.id]!.trim() !== c.name && (
-                  <button className="btn btn-primary" style={{ minHeight: 40 }} onClick={() => run(() => api('PATCH', `/api/menu/categories/${c.id}`, { name: names[c.id]!.trim() }))}>บันทึก</button>
+                  <button className="btn btn-primary" style={{ minHeight: 40 }} onClick={() => run(() => api('PATCH', `/api/menu/categories/${c.id}`, { name: names[c.id]!.trim() }))}><Icon name="check" /> บันทึก</button>
                 )}
                 <button className="btn" style={{ minHeight: 40, padding: '0 12px' }} disabled={i === 0} aria-label={`เลื่อน ${c.name} ขึ้น`}
                   onClick={() => run(() => api('POST', `/api/menu/categories/${c.id}/move`, { dir: 'up' }))}>↑</button>
                 <button className="btn" style={{ minHeight: 40, padding: '0 12px' }} disabled={i === cats.length - 1} aria-label={`เลื่อน ${c.name} ลง`}
                   onClick={() => run(() => api('POST', `/api/menu/categories/${c.id}/move`, { dir: 'down' }))}>↓</button>
                 <button className="btn btn-warn" style={{ minHeight: 40 }} disabled={count(c.id) > 0} title={count(c.id) ? 'ย้ายเมนูออกก่อน' : undefined}
-                  onClick={() => run(() => api('DELETE', `/api/menu/categories/${c.id}`))}>ลบ</button>
+                  onClick={async () => { if (await confirm({ title: `ลบหมวด “${c.name}”?`, confirm: 'ลบหมวด', tone: 'danger' })) run(() => api('DELETE', `/api/menu/categories/${c.id}`)); }}><Icon name="trash" /> ลบ</button>
               </td>
             </tr>
           ))}
@@ -161,7 +164,7 @@ function CategorySheet({ cats, items, onClose, onChanged }: { cats: any[]; items
       <div className="row">
         <input aria-label="ชื่อหมวดใหม่" value={add} onChange={(e) => setAdd(e.target.value)} placeholder="ชื่อหมวดใหม่"
           style={{ height: 48, borderRadius: 12, border: '1px solid #c9cfc7', padding: '0 12px', flex: 1, fontSize: 16 }} />
-        <button className="btn btn-primary" disabled={!add.trim()} onClick={() => run(async () => { await api('POST', '/api/menu/categories', { name: add.trim() }); setAdd(''); })}>+ เพิ่มหมวด</button>
+        <button className="btn btn-primary" disabled={!add.trim()} onClick={() => run(async () => { await api('POST', '/api/menu/categories', { name: add.trim() }); setAdd(''); })}><Icon name="plus" /> เพิ่มหมวด</button>
       </div>
       {err && <div className="error" role="alert">{err}</div>}
     </Sheet>
