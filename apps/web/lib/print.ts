@@ -66,10 +66,11 @@ export function thaiDateTime(iso: string) {
 }
 
 /** The same content as the on-screen receipt (/receipt/[id]), as printer lines. */
-export function receiptLines(d: any, change = 0, copy = false): TicketLine[] {
+export function receiptLines(d: any, change = 0, copy = false, logo: HTMLImageElement | null = null): TicketLine[] {
   const [th, en] = TITLE[d.doc_type]!;
   const isTax = d.doc_type !== 'RECEIPT';
   const L: TicketLine[] = [
+    ...(logo ? [{ t: 'logo', img: logo } as const] : []),
     { t: 'text', text: d.seller.shopName, align: 'center', size: 30, bold: true },
   ];
   if (d.seller.name !== d.seller.shopName) L.push({ t: 'text', text: d.seller.name, align: 'center' });

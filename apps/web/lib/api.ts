@@ -105,6 +105,25 @@ async function shrink(file: File): Promise<Blob> {
   return new Promise((ok, no) => canvas.toBlob((b) => (b ? ok(b) : no(new Error('encode'))), 'image/jpeg', 0.85));
 }
 
+/** Logos keep their transparency (PNG) and are capped at 512 px: plenty for a header, a receipt or a 58 mm printer. */
+async function shrinkLogo(file: File): Promise<Blob> {
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1, 512 / Math.max(bmp.width, bmp.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bmp.width * scale);
+  canvas.height = Math.round(bmp.height * scale);
+  canvas.getContext('2d')!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  return new Promise((ok, no) => canvas.toBlob((b) => (b ? ok(b) : no(new Error('encode'))), 'image/png'));
+}
+
+export async function uploadLogo(file: File): Promise<{ logo_url: string }> {
+  const blob = await shrinkLogo(file).catch(() => { throw new ApiError(415, 'invalid_image', MESSAGES.invalid_image!); });
+  const res = await fetch('/api/settings/logo', { method: 'POST', headers: { 'content-type': 'image/png' }, body: blob, credentials: 'same-origin' });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new ApiError(res.status, data?.error ?? 'error', MESSAGES[data?.error] ?? data?.message ?? 'อัปโหลดโลโก้ไม่สำเร็จ');
+  return data;
+}
+
 export async function uploadMenuImage(itemId: string, file: File): Promise<{ id: string; image_url: string }> {
   const blob = await shrink(file).catch(() => { throw new ApiError(415, 'invalid_image', MESSAGES.invalid_image!); });
   const res = await fetch(`/api/menu/items/${itemId}/image`, { method: 'POST', headers: { 'content-type': 'image/jpeg' }, body: blob, credentials: 'same-origin' });

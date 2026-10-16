@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { api, errText } from '@/lib/api';
-import { Sparkle } from '@/lib/ui';
+import { loadLogo } from '@/lib/ticket';
 import { agentOnline, printTicket, receiptLines, receiptPrinterFor, usePrinters, type PrintResult } from '@/lib/print';
 import { terminalFor, useMe } from '@/lib/useMe';
 import { useConfirm } from '@/lib/dialog';
@@ -58,7 +58,7 @@ function Receipt() {
           </div>
         )}
         <div style={{ textAlign: 'center', display: 'grid', gap: 2, justifyItems: 'center' }}>
-          <Sparkle size={26} color="#111" />
+          {me?.tenant.logo_url && me.tenant.logo_on_receipt && <img src={me.tenant.logo_url} alt={d.seller.shopName} style={{ maxWidth: '60%', maxHeight: 70, objectFit: 'contain' }} />}
           <b style={{ fontSize: 17 }}>{d.seller.shopName}</b>
           {d.seller.name !== d.seller.shopName && <div>{d.seller.name}</div>}
           {d.seller.address && <div>{d.seller.address}</div>}
@@ -138,6 +138,7 @@ function Receipt() {
  * ถ้าร้านยังไม่ได้ตั้งเครื่องพิมพ์ ใช้การพิมพ์ของเบราว์เซอร์ตามเดิม
  */
 function PrintButtons({ doc, change, fresh, terminalId }: { doc: any; change: number; fresh: boolean; terminalId: string | null }) {
+  const { me } = useMe();
   const { list } = usePrinters();
   const [state, setState] = useState<PrintResult | { status: 'sending' } | null>(null);
   const auto = useRef(false);
@@ -150,11 +151,12 @@ function PrintButtons({ doc, change, fresh, terminalId }: { doc: any; change: nu
     setState({ status: 'sending' });
     try {
       const cash = doc.payments?.some((p: any) => p.method === 'cash');
-      const r = await printTicket(printer, 'receipt', receiptLines(doc, change, copy), { kickDrawer: !copy && cash });
+      const logo = me?.tenant.logo_url && me.tenant.logo_on_receipt ? await loadLogo(me.tenant.logo_url) : null;
+      const r = await printTicket(printer, 'receipt', receiptLines(doc, change, copy, logo), { kickDrawer: !copy && cash });
       if (r.status !== 'failed') printed.current = true;
       setState(r);
     } catch (e) { setState({ status: 'failed', error: errText(e) }); }
-  }, [printer, doc, change, fresh]);
+  }, [printer, doc, change, fresh, me]);
   useEffect(() => {
     if (fresh && printer && !auto.current) { auto.current = true; send(); }
   }, [fresh, printer, send]);

@@ -5,7 +5,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../app.ts';
 import { atLeast, HttpError } from '../auth.ts';
-import { audit, one, withTenant } from '../db.ts';
+import { audit, one, withPlatform, withTenant } from '../db.ts';
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const Id = z.object({ id: z.string().uuid() });
@@ -71,6 +71,38 @@ export async function uploadRoutes(app: FastifyInstance, ctx: Ctx) {
     });
     await removeFile(tenantId, before.image_url);
     return { id, image_url: null };
+  });
+
+  // The shop's own logo, shown in the header and on receipts. Owner only; stored beside the menu photos.
+  app.post('/api/settings/logo', { preHandler: ctx.auth(['owner']), bodyLimit: MAX_BYTES }, async (req) => {
+    const body = req.body;
+    if (!Buffer.isBuffer(body)) throw new HttpError(415, 'invalid_image', 'send a JPEG, PNG or WebP image');
+    const ext = sniff(body);
+    if (!ext) throw new HttpError(415, 'invalid_image', 'file is not a JPEG, PNG or WebP image');
+    const tenantId = req.session.tenantId;
+    const name = `${randomUUID()}.${ext}`;
+    const dir = join(root, tenantId);
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, `${name}.tmp`), body);
+    await rename(join(dir, `${name}.tmp`), join(dir, name));
+    try {
+      const before = await withPlatform(ctx.db, (c) => one(c, `SELECT logo_url FROM tenants WHERE id = $1`, [tenantId]));
+      await withPlatform(ctx.db, (c) => c.query(`UPDATE tenants SET logo_url = $2 WHERE id = $1`, [tenantId, `/api/uploads/${tenantId}/${name}`]));
+      await withTenant(ctx.db, tenantId, (c) => audit(c, req.session.userId, 'settings.logo', 'tenant', tenantId, { bytes: body.length }));
+      await removeFile(tenantId, before?.logo_url ?? null);
+      return { logo_url: `/api/uploads/${tenantId}/${name}` };
+    } catch (e) {
+      await removeFile(tenantId, name);
+      throw e;
+    }
+  });
+
+  app.delete('/api/settings/logo', { preHandler: ctx.auth(['owner']) }, async (req) => {
+    const tenantId = req.session.tenantId;
+    const before = await withPlatform(ctx.db, (c) => one(c, `SELECT logo_url FROM tenants WHERE id = $1`, [tenantId]));
+    await withPlatform(ctx.db, (c) => c.query(`UPDATE tenants SET logo_url = NULL WHERE id = $1`, [tenantId]));
+    await removeFile(tenantId, before?.logo_url ?? null);
+    return { logo_url: null };
   });
 
   app.get('/api/uploads/:tenant/:file', { preHandler: ctx.auth() }, async (req, reply) => {

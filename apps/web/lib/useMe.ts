@@ -8,7 +8,7 @@ export interface Me {
   tenant: {
     id: string; name: string; status: string; legal_name: string | null; tax_id: string | null; address: string | null;
     vat_registered: boolean; vat_registered_at: string | null; price_includes_vat: boolean; service_charge_bp: number; cash_rounding: string;
-    promptpay_id: string | null;
+    promptpay_id: string | null; logo_url: string | null; logo_on_receipt: boolean;
   };
   role: 'owner' | 'manager' | 'cashier' | 'waiter' | 'kitchen';
   branches: { id: string; name: string; branch_code: string }[];

@@ -10,7 +10,8 @@ export type TicketLine =
   | { t: 'row'; left: string; right: string; size?: number; bold?: boolean }
   | { t: 'item'; qty: string; name: string; sub?: string; amount?: string; size?: number; bold?: boolean }
   | { t: 'hr'; thick?: boolean }
-  | { t: 'gap'; px: number };
+  | { t: 'gap'; px: number }
+  | { t: 'logo'; img: HTMLImageElement; maxH?: number };
 
 export interface Bitmap { width: number; height: number; bits: Uint8Array }
 
@@ -49,6 +50,13 @@ function layout(ctx: CanvasRenderingContext2D, lines: TicketLine[], width: numbe
   };
   for (const l of lines) {
     if (l.t === 'gap') { y += Math.round(l.px * k); continue; }
+    if (l.t === 'logo') {
+      const h = Math.min(Math.round((l.maxH ?? 110) * k), Math.round(l.img.naturalHeight * (inner / l.img.naturalWidth)), Math.round(inner * 0.6));
+      const w = Math.round(h * (l.img.naturalWidth / l.img.naturalHeight));
+      if (paint) ctx.drawImage(l.img, Math.round((width - w) / 2), y, w, h);
+      y += h + 6;
+      continue;
+    }
     if (l.t === 'hr') {
       const h = l.thick ? 3 : 2;
       if (paint) {
@@ -110,6 +118,16 @@ export async function renderTicket(lines: TicketLine[], width: number): Promise<
     }
   }
   return { width, height, bits };
+}
+
+/** Load a logo so it can be drawn on a ticket; resolves null if it cannot be fetched (the ticket then prints without it). */
+export function loadLogo(url: string): Promise<HTMLImageElement | null> {
+  return new Promise((ok) => {
+    const img = new Image();
+    img.onload = () => ok(img.naturalWidth > 0 ? img : null);
+    img.onerror = () => ok(null);
+    img.src = url;
+  });
 }
 
 export function toBase64(bits: Uint8Array): string {

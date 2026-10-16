@@ -34,6 +34,7 @@ export function TopBar({ me, active, children }: { me: Me | null; active?: 'tabl
       {active && me?.platformAdmin && <Link href="/platform" style={tab(active === 'platform')}>ผู้ดูแลระบบ</Link>}
       <span className="spacer" />
       {children}
+      {me?.tenant.logo_url && <img src={me.tenant.logo_url} alt="" style={{ height: 34, maxWidth: 90, objectFit: 'contain' }} />}
       {me && <span className="muted topbar-user" style={{ fontSize: 15 }}>{me.tenant.name} · <b style={{ color: 'var(--ink)' }}>{me.user.name}</b> ({ROLE[me.role]})</span>}
       {me?.device ? (
         // A shared till: hand over to the next person instead of signing the shop out.

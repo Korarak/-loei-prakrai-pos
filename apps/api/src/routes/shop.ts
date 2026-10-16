@@ -21,6 +21,7 @@ const Settings = z.object({
   promptpayId: z.string().trim().transform((v) => v.replace(/[\s-]/g, '')).nullable()
     .refine((v) => v === null || v === '' || isValidPromptPayId(v), 'PromptPay ID is a 10-digit phone or 13-digit ID')
     .transform((v) => v || null),
+  logoOnReceipt: z.boolean(),
 }).partial();
 
 const Terminal = z.object({
@@ -59,7 +60,7 @@ const Branch = z.object({
 const COLS = {
   name: 'name', legalName: 'legal_name', taxId: 'tax_id', address: 'address', vatRegistered: 'vat_registered',
   vatRegisteredAt: 'vat_registered_at', priceIncludesVat: 'price_includes_vat',
-  serviceChargeBp: 'service_charge_bp', cashRounding: 'cash_rounding', promptpayId: 'promptpay_id',
+  serviceChargeBp: 'service_charge_bp', cashRounding: 'cash_rounding', promptpayId: 'promptpay_id', logoOnReceipt: 'logo_on_receipt',
 } as const;
 
 export async function shopRoutes(app: FastifyInstance, ctx: Ctx) {

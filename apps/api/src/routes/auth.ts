@@ -208,7 +208,7 @@ export async function authRoutes(app: FastifyInstance, ctx: Ctx) {
     const [user, tenant] = await withPlatform(ctx.db, (c) => Promise.all([
       one(c, `SELECT id, name, email FROM users WHERE id = $1`, [s.userId]),
       one(c, `SELECT id, name, status, legal_name, tax_id, address, vat_registered, vat_registered_at,
-                     price_includes_vat, service_charge_bp, cash_rounding, promptpay_id FROM tenants WHERE id = $1`, [s.tenantId]),
+                     price_includes_vat, service_charge_bp, cash_rounding, promptpay_id, logo_url, logo_on_receipt FROM tenants WHERE id = $1`, [s.tenantId]),
     ]));
     const [branches, terminals] = await withTenant(ctx.db, s.tenantId, (c) => Promise.all([
       many(c, `SELECT id, name, branch_code, address FROM branches ORDER BY name`),

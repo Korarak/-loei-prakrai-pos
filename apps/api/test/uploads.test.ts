@@ -118,3 +118,32 @@ describe('menu photos', () => {
     }
   });
 });
+
+describe('shop logo', () => {
+  it('is set by the owner, shows in /api/me, is replaced and removed, and rejects non-images', async () => {
+    const a = await newShop(app);
+    const png = { ...bearer(a.token), 'content-type': 'image/png' };
+
+    expect((await a.call('GET', '/api/me')).body.tenant.logo_url).toBeNull();
+    const up = await app.inject({ method: 'POST', url: '/api/settings/logo', headers: png, payload: PNG });
+    expect(up.statusCode).toBe(200);
+    const url: string = up.json().logo_url;
+    const me = (await a.call('GET', '/api/me')).body.tenant;
+    expect(me.logo_url).toBe(url);
+    expect(me.logo_on_receipt).toBe(true);
+    expect((await app.inject({ method: 'GET', url, headers: bearer(a.token) })).statusCode).toBe(200);
+
+    const again = await app.inject({ method: 'POST', url: '/api/settings/logo', headers: png, payload: PNG });
+    expect((await app.inject({ method: 'GET', url, headers: bearer(a.token) })).statusCode).toBe(404); // old file cleaned up
+
+    expect((await a.call('PATCH', '/api/settings', { logoOnReceipt: false })).status).toBe(200);
+    expect((await a.call('GET', '/api/me')).body.tenant.logo_on_receipt).toBe(false);
+
+    const bad = await app.inject({ method: 'POST', url: '/api/settings/logo', headers: png, payload: Buffer.from('not an image at all') });
+    expect(bad.statusCode).toBe(415);
+
+    expect((await a.call('DELETE', '/api/settings/logo')).status).toBe(200);
+    expect((await a.call('GET', '/api/me')).body.tenant.logo_url).toBeNull();
+    expect((await app.inject({ method: 'GET', url: again.json().logo_url, headers: bearer(a.token) })).statusCode).toBe(404);
+  });
+});

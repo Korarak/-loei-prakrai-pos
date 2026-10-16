@@ -3,7 +3,7 @@
 import { isValidPromptPayId, isValidThaiTaxId } from '@prakai/core';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { api, errText } from '@/lib/api';
+import { api, errText, uploadLogo } from '@/lib/api';
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
@@ -27,7 +27,7 @@ export default function Settings() {
       vatRegistered: me.tenant.vat_registered, legalName: me.tenant.legal_name ?? '', taxId: me.tenant.tax_id ?? '',
       address: me.tenant.address ?? '', priceIncludesVat: me.tenant.price_includes_vat,
       serviceCharge: String(me.tenant.service_charge_bp / 100), cashRounding: me.tenant.cash_rounding,
-      promptpay: me.tenant.promptpay_id ?? '',
+      promptpay: me.tenant.promptpay_id ?? '', logoOnReceipt: me.tenant.logo_on_receipt ?? true,
     });
     setPosIds(Object.fromEntries(me.terminals.map((t) => [t.id, t.rd_pos_id ?? ''])));
     setSerials(Object.fromEntries(me.terminals.map((t) => [t.id, t.serial_no ?? ''])));
@@ -45,7 +45,7 @@ export default function Settings() {
         name: f.name.trim(), vatRegisteredAt: f.vatRegistered && f.vatRegisteredAt ? f.vatRegisteredAt : null,
         vatRegistered: f.vatRegistered, legalName: f.legalName || null, taxId: f.taxId || null, address: f.address || null,
         priceIncludesVat: f.priceIncludesVat, serviceChargeBp: Math.round(Number(f.serviceCharge || 0) * 100), cashRounding: f.cashRounding,
-        promptpayId: f.promptpay.trim() || null,
+        promptpayId: f.promptpay.trim() || null, logoOnReceipt: f.logoOnReceipt,
       });
       for (const t of me!.terminals) {
         if ((t.rd_pos_id ?? '') !== posIds[t.id] || (t.serial_no ?? '') !== serials[t.id]) {
@@ -68,6 +68,40 @@ export default function Settings() {
         {!owner && <div className="error">เฉพาะเจ้าของร้านแก้ค่าภาษีได้</div>}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 16 }}>
           <section className="card" style={{ padding: 18, display: 'grid', gap: 12, alignContent: 'start' }}>
+            <div className="row" style={{ gap: 14, alignItems: 'flex-start' }}>
+              <div style={{ width: 96, height: 96, borderRadius: 12, border: '1px solid var(--line)', display: 'grid', placeItems: 'center', overflow: 'hidden', background: '#fff', flex: 'none' }}>
+                {me.tenant.logo_url ? <img src={me.tenant.logo_url} alt="โลโก้ร้าน" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <span className="muted" style={{ fontSize: 13 }}>ยังไม่มีโลโก้</span>}
+              </div>
+              <div style={{ display: 'grid', gap: 8 }}>
+                <b>โลโก้ร้าน</b>
+                <span className="muted" style={{ fontSize: 14 }}>แสดงที่แถบด้านบนและหัวใบเสร็จ · ใช้ไฟล์ PNG พื้นโปร่งใสหรือพื้นขาว สีเข้มจะพิมพ์ชัดที่สุด</span>
+                {owner && (
+                  <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
+                    <label className="btn btn-outline" style={{ cursor: 'pointer', minHeight: 40 }}>
+                      <Icon name="plus" size={16} /> {me.tenant.logo_url ? 'เปลี่ยนโลโก้' : 'เพิ่มโลโก้'}
+                      <input type="file" accept="image/*" hidden onChange={async (e) => {
+                        const file = e.target.files?.[0]; e.target.value = '';
+                        if (!file) return;
+                        setErr(''); setMsg('');
+                        try { await uploadLogo(file); await reload(); setMsg('บันทึกโลโก้แล้ว'); } catch (x) { setErr(errText(x)); }
+                      }} />
+                    </label>
+                    {me.tenant.logo_url && (
+                      <button className="btn" style={{ minHeight: 40 }} onClick={async () => {
+                        setErr(''); setMsg('');
+                        try { await api('DELETE', '/api/settings/logo'); await reload(); setMsg('ลบโลโก้แล้ว'); } catch (x) { setErr(errText(x)); }
+                      }}><Icon name="trash" /> ลบโลโก้</button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            {me.tenant.logo_url && (
+              <label className="row" style={{ minHeight: 44 }}>
+                <input type="checkbox" checked={f.logoOnReceipt} onChange={(e) => setF({ ...f, logoOnReceipt: e.target.checked })} style={{ width: 24, height: 24, accentColor: 'var(--accent)' }} />
+                ใส่โลโก้บนใบเสร็จ (กดบันทึกด้านล่างด้วย)
+              </label>
+            )}
             <label className="field">ชื่อร้าน (แสดงบนหน้าจอและหัวใบเสร็จ)<input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
             <label className="row" style={{ minHeight: 48, fontSize: 17, fontWeight: 700 }}>
               <input type="checkbox" checked={f.vatRegistered} onChange={(e) => setF({ ...f, vatRegistered: e.target.checked })} style={{ width: 26, height: 26, accentColor: 'var(--accent)' }} />
