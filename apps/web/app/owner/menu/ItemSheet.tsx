@@ -28,12 +28,12 @@ const H = ({ n, children, hint }: { n: number; children: React.ReactNode; hint?:
  * One panel for adding and editing a dish: the basics, the questions it asks, and its recipe.
  * Nothing is saved until the single button at the bottom, and the cost updates as you type.
  */
-export function ItemSheet({ item, ings, cats, groups, items, vatRatio, onClose, onSaved, onIngsChanged }: {
-  item: any | null; ings: any[]; cats: any[]; groups: any[]; items: any[]; vatRatio: number;
+export function ItemSheet({ item, ings, cats, groups, items, vatRatio, defaultCategoryId, onClose, onSaved, onIngsChanged }: {
+  item: any | null; defaultCategoryId?: string; ings: any[]; cats: any[]; groups: any[]; items: any[]; vatRatio: number;
   onClose: () => void; onSaved: () => void; onIngsChanged: () => void;
 }) {
   const [name, setName] = useState<string>(item?.name ?? '');
-  const [categoryId, setCategoryId] = useState<string>(item?.category_id ?? cats[0]?.id ?? '');
+  const [categoryId, setCategoryId] = useState<string>(item ? item.category_id ?? '' : defaultCategoryId ?? cats[0]?.id ?? '');
   const [station, setStation] = useState<'kitchen' | 'bar'>(item?.station ?? 'kitchen');
   const [price, setPrice] = useState(item ? (item.price / 100).toFixed(2) : '');
   const [active, setActive] = useState<boolean>(item?.active ?? true);

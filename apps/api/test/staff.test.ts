@@ -132,6 +132,26 @@ describe('terminals, categories and export', () => {
     expect((await s.call('DELETE', `/api/menu/categories/${k.id}`)).status).toBe(200);
   });
 
+  it('sets category and dish order in one call, and puts new or moved dishes last', async () => {
+    const s = await newShop(app);
+    const cats = (await s.call('GET', '/api/menu')).body.categories;
+    const reversed = [...cats].reverse().map((c: any) => c.id);
+    const after = (await s.call('PUT', '/api/menu/categories/order', { ids: reversed })).body;
+    expect(after.map((c: any) => c.id)).toEqual(reversed);
+
+    const menu = (await s.call('GET', '/api/menu')).body;
+    const catId = cats[0].id;
+    const inCat = menu.items.filter((i: any) => i.category_id === catId).map((i: any) => i.id);
+    const flipped = [...inCat].reverse();
+    await s.call('PUT', '/api/menu/items/order', { categoryId: catId, ids: flipped });
+    const again = (await s.call('GET', '/api/menu')).body.items.filter((i: any) => i.category_id === catId).map((i: any) => i.id);
+    expect(again).toEqual(flipped);
+
+    const added = (await s.call('POST', '/api/menu/items', { categoryId: catId, name: 'เมนูใหม่', price: 5000 })).body;
+    const last = (await s.call('GET', '/api/menu')).body.items.filter((i: any) => i.category_id === catId).at(-1);
+    expect(last.id).toBe(added.id);
+  });
+
   it('exports all shop data without secrets', async () => {
     const s = await newShop(app);
     await s.call('POST', '/api/staff', { name: 'สมใจ', role: 'cashier', pin: '482913' });

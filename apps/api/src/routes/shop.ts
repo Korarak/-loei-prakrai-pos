@@ -45,7 +45,7 @@ const Item = z.object({
   vatExempt: z.boolean().default(false),
   station: z.enum(['kitchen', 'bar']).default('kitchen'),
   active: z.boolean().default(true),
-  sort: z.number().int().default(0),
+  sort: z.number().int().optional(),
 });
 
 const Table = z.object({ name: z.string().trim().min(1).max(20), seats: z.number().int().min(1).max(50).default(4) });
@@ -176,6 +176,30 @@ export async function shopRoutes(app: FastifyInstance, ctx: Ctx) {
     });
   });
 
+  // Set the whole order in one go (drag and drop sends the final list; the arrows send the list with two swapped).
+  app.put('/api/menu/categories/order', { preHandler: ctx.auth(atLeast('manager')) }, async (req) => {
+    const { ids } = z.object({ ids: z.array(z.string().uuid()).max(500) }).parse(req.body);
+    return withTenant(ctx.db, req.session.tenantId, async (c) => {
+      const all = await many(c, `SELECT id FROM menu_categories ORDER BY sort, name FOR UPDATE`);
+      const rest = all.map((k) => k.id).filter((k) => !ids.includes(k));
+      const order = [...ids.filter((k) => all.some((a) => a.id === k)), ...rest];
+      for (const [n, k] of order.entries()) await c.query(`UPDATE menu_categories SET sort = $2 WHERE id = $1`, [k, n]);
+      return many(c, `SELECT id, name, sort FROM menu_categories ORDER BY sort`);
+    });
+  });
+
+  // Order of the dishes inside one category (categoryId null = dishes without a category).
+  app.put('/api/menu/items/order', { preHandler: ctx.auth(atLeast('manager')) }, async (req) => {
+    const b = z.object({ categoryId: z.string().uuid().nullable(), ids: z.array(z.string().uuid()).max(1000) }).parse(req.body);
+    return withTenant(ctx.db, req.session.tenantId, async (c) => {
+      const all = await many(c, `SELECT id FROM menu_items WHERE category_id IS NOT DISTINCT FROM $1 ORDER BY sort, name FOR UPDATE`, [b.categoryId]);
+      const rest = all.map((i) => i.id).filter((i) => !b.ids.includes(i));
+      const order = [...b.ids.filter((i) => all.some((a) => a.id === i)), ...rest];
+      for (const [n, i] of order.entries()) await c.query(`UPDATE menu_items SET sort = $2 WHERE id = $1`, [i, n]);
+      return { ok: true };
+    });
+  });
+
   app.delete('/api/menu/categories/:id', { preHandler: ctx.auth(atLeast('manager')) }, async (req) => {
     const { id } = Id.parse(req.params);
     return withTenant(ctx.db, req.session.tenantId, async (c) => {
@@ -194,7 +218,9 @@ export async function shopRoutes(app: FastifyInstance, ctx: Ctx) {
       const it = await one(c,
         `INSERT INTO menu_items (category_id, name, price, vat_exempt, station, active, sort)
          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [b.categoryId, b.name, b.price, b.vatExempt, b.station, b.active, b.sort]);
+        [b.categoryId, b.name, b.price, b.vatExempt, b.station, b.active,
+         // new dishes go to the end of their category instead of landing in an arbitrary place
+         b.sort ?? (await one(c, `SELECT coalesce(max(sort), -1) + 1 AS n FROM menu_items WHERE category_id IS NOT DISTINCT FROM $1`, [b.categoryId])).n]);
       await audit(c, req.session.userId, 'menu.create', 'menu_item', it.id, b);
       return it;
     });
@@ -211,7 +237,11 @@ export async function shopRoutes(app: FastifyInstance, ctx: Ctx) {
           WHERE id = $1 RETURNING *`,
         [id, b.categoryId === undefined ? before.category_id : b.categoryId, b.name ?? before.name,
          b.price ?? before.price, b.vatExempt ?? before.vat_exempt, b.station ?? before.station,
-         b.active ?? before.active, b.sort ?? before.sort]);
+         b.active ?? before.active,
+         // moved to another category → goes to the end there
+         b.sort ?? (b.categoryId !== undefined && b.categoryId !== before.category_id
+           ? (await one(c, `SELECT coalesce(max(sort), -1) + 1 AS n FROM menu_items WHERE category_id IS NOT DISTINCT FROM $1`, [b.categoryId])).n
+           : before.sort)]);
       if (b.price !== undefined && b.price !== before.price) {
         await audit(c, req.session.userId, 'menu.price', 'menu_item', id, { from: before.price, to: b.price });
       }

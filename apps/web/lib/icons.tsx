@@ -1,5 +1,8 @@
 /** Small stroke icons that lead the eye on buttons. Decorative: the button text still says what it does. */
 const P = {
+  up: 'M6 15l6-6 6 6',
+  down: 'M6 9l6 6 6-6',
+  grip: 'M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01',
   close: 'M6 6l12 12M18 6 6 18',
   plus: 'M12 5v14M5 12h14',
   check: 'M5 12.5l4.2 4.2L19 7',
