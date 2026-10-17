@@ -60,6 +60,25 @@ export async function uploadRoutes(app: FastifyInstance, ctx: Ctx) {
     }
   });
 
+  // Remove a dish for good, but only if it was never sold: sold dishes stay in the books, so those can only be switched off.
+  app.delete('/api/menu/items/:id', { preHandler: ctx.auth(atLeast('manager')) }, async (req) => {
+    const { id } = Id.parse(req.params);
+    const tenantId = req.session.tenantId;
+    const gone = await withTenant(ctx.db, tenantId, async (c) => {
+      const it = await one(c, `SELECT name, image_url FROM menu_items WHERE id = $1 FOR UPDATE`, [id]);
+      if (!it) throw new HttpError(404, 'not_found');
+      const sold = await one(c, `SELECT count(*)::int AS n FROM order_lines WHERE menu_item_id = $1`, [id]);
+      if (sold.n > 0) throw new HttpError(409, 'item_sold', 'this dish has been sold; switch it off instead');
+      await c.query(`DELETE FROM recipe_lines WHERE menu_item_id = $1`, [id]);
+      await c.query(`DELETE FROM menu_item_modifier_groups WHERE menu_item_id = $1`, [id]);
+      await c.query(`DELETE FROM menu_items WHERE id = $1`, [id]);
+      await audit(c, req.session.userId, 'menu.delete', 'menu_item', id, { name: it.name });
+      return it;
+    });
+    await removeFile(tenantId, gone.image_url);
+    return { ok: true };
+  });
+
   app.delete('/api/menu/items/:id/image', { preHandler: ctx.auth(atLeast('manager')) }, async (req) => {
     const { id } = Id.parse(req.params);
     const tenantId = req.session.tenantId;

@@ -181,3 +181,20 @@ describe('document numbers with several tills', () => {
     expect(b).toMatch(/^RCP2-\d{4}-0001$/);
   });
 });
+
+describe('deleting a dish', () => {
+  it('removes a dish nobody sold (with its recipe) and refuses one that was sold', async () => {
+    const s = await newShop(app);
+    const cat = (await s.call('GET', '/api/menu')).body.categories[0].id;
+    const fresh = (await s.call('POST', '/api/menu/items', { categoryId: cat, name: 'ลองลบ', price: 1000 })).body;
+    expect((await s.call('DELETE', `/api/menu/items/${fresh.id}`)).status).toBe(200);
+    expect((await s.call('GET', '/api/menu')).body.items.some((i: any) => i.id === fresh.id)).toBe(false);
+    expect((await s.call('DELETE', `/api/menu/items/${fresh.id}`)).status).toBe(404);
+
+    const o = (await s.call('POST', '/api/orders', { tableId: s.tables[0].id })).body;
+    await s.call('POST', `/api/orders/${o.id}/lines`, { menuItemId: s.item('ข้าวสวย') });
+    const r = await s.call('DELETE', `/api/menu/items/${s.item('ข้าวสวย')}`);
+    expect(r.status).toBe(409);
+    expect(r.body.error).toBe('item_sold');
+  });
+});

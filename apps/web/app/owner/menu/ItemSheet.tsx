@@ -3,6 +3,7 @@
 import { formatBaht, pct, valueOf } from '@prakai/core';
 import { useEffect, useMemo, useState } from 'react';
 import { api, errText, uploadMenuImage } from '@/lib/api';
+import { useConfirm } from '@/lib/dialog';
 import { Icon } from '@/lib/icons';
 import { Sheet, toSatang, UNIT } from '@/lib/owner';
 import { BowlIcon, tintFor } from '@/lib/ui';
@@ -32,6 +33,7 @@ export function ItemSheet({ item, ings, cats, groups, items, vatRatio, defaultCa
   item: any | null; defaultCategoryId?: string; ings: any[]; cats: any[]; groups: any[]; items: any[]; vatRatio: number;
   onClose: () => void; onSaved: () => void; onIngsChanged: () => void;
 }) {
+  const confirm = useConfirm();
   const [name, setName] = useState<string>(item?.name ?? '');
   const [categoryId, setCategoryId] = useState<string>(item ? item.category_id ?? '' : defaultCategoryId ?? cats[0]?.id ?? '');
   const [station, setStation] = useState<'kitchen' | 'bar'>(item?.station ?? 'kitchen');
@@ -94,6 +96,12 @@ export function ItemSheet({ item, ings, cats, groups, items, vatRatio, defaultCa
       if (file) await uploadMenuImage(itemId, file);
       onSaved();
     } catch (e) { setErr(errText(e)); setBusy(false); }
+  }
+
+  async function removeItem() {
+    if (!item || !(await confirm({ title: `ลบเมนู “${item.name}”?`, body: 'ลบแล้วกู้คืนไม่ได้ (เมนูที่เคยขายแล้วลบไม่ได้ ให้ปิดขายแทน)', confirm: 'ลบเมนู', tone: 'danger' }))) return;
+    setBusy(true); setErr('');
+    try { await api('DELETE', `/api/menu/items/${item.id}`); onSaved(); } catch (e) { setErr(errText(e)); setBusy(false); }
   }
 
   async function removePhoto() {
@@ -195,6 +203,7 @@ export function ItemSheet({ item, ings, cats, groups, items, vatRatio, defaultCa
         <button className="btn btn-primary btn-lg" onClick={save} disabled={!valid || busy}>
           {busy ? 'กำลังบันทึก…' : <><Icon name={item || savedId ? 'save' : 'plus'} size={22} /> {item || savedId ? 'บันทึก' : 'เพิ่มเมนู'}</>}
         </button>
+        {item && <button className="btn btn-warn" onClick={removeItem} disabled={busy}><Icon name="trash" /> ลบเมนูนี้</button>}
         {!valid && !busy && <div className="muted" style={{ fontSize: 14 }}>{!name.trim() ? 'ใส่ชื่อเมนู' : !Number.isFinite(newPrice) ? 'ใส่ราคาขาย' : 'วัตถุดิบทุกบรรทัดต้องมีปริมาณ'}</div>}
       </Sheet>
 
