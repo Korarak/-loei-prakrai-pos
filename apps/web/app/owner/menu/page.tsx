@@ -97,6 +97,12 @@ export default function MenuPage() {
     return run(async () => { await api('PATCH', `/api/menu/items/${itemId}`, { categoryId: catId }); await load(); });
   }
 
+  // Quick edits from the row (sold out today, price): shown at once, saved in the background, reloaded if the server refuses.
+  function patchItem(id: string, patch: { active?: boolean; price?: number }) {
+    setItems((items ?? []).map((i) => (i.id === id ? { ...i, ...patch } : i)));
+    return run(async () => { await api('PATCH', `/api/menu/items/${id}`, patch); if (patch.price !== undefined) await load(); });
+  }
+
   const dropOnItem = (target: string) => {
     if (drag?.kind === 'item' && current && drag.id !== target) reorderItems(current.id, placeBefore(current.items.map((i) => i.id), drag.id, target));
     setDrag(null); setOver(null);
@@ -140,7 +146,21 @@ export default function MenuPage() {
                 onSelect={setSel} onDrag={setDrag} onOver={setOver} onDrop={dropOnCat}
                 onMove={(id, d) => reorderCats(swap(sections.map((s) => s.id), id, d))}
                 onAdd={async (name) => { await run(async () => { const k = await api('POST', '/api/menu/categories', { name }); await load(); setSel(k.id); }); }} />
-              {current ? (
+              {searching ? (
+                <section className="card" style={{ flex: '3 1 420px', padding: '14px 16px', display: 'grid', gap: 6, minWidth: 0 }}>
+                  {sections.every((x) => !x.items.some(matches)) && <p className="muted" style={{ margin: 0 }}>ไม่พบเมนูที่ชื่อมี “{q.trim()}” ในทุกหมวด</p>}
+                  {sections.map((x) => {
+                    const hits = x.items.filter(matches);
+                    if (!hits.length) return null;
+                    return (
+                      <div key={x.id}>
+                        <button className="btn" style={{ minHeight: 34, fontSize: 14 }} onClick={() => { setSel(x.id); setQ(''); }}>{x.name} · {hits.length} รายการ — เปิดหมวดนี้เพื่อจัดลำดับ</button>
+                        {hits.map((i) => <ItemRow key={i.id} item={i} onOpen={() => setOpen(i)} onPatch={(patch) => patchItem(i.id, patch)} />)}
+                      </div>
+                    );
+                  })}
+                </section>
+              ) : current ? (
                 <section className="card" style={{ flex: '3 1 420px', padding: '14px 16px', display: 'grid', gap: 10, minWidth: 0 }}>
                   <CategoryHeader key={current.id} section={current}
                     onRename={(name) => run(async () => { await api('PATCH', `/api/menu/categories/${current.id}`, { name }); await load(); })}
@@ -153,35 +173,15 @@ export default function MenuPage() {
                   <div style={{ display: 'grid' }}
                     onDragOver={(e) => { if (drag?.kind === 'item') e.preventDefault(); }}
                     onDrop={() => { if (drag?.kind === 'item' && current.id !== NO_CAT && !current.items.some((i) => i.id === drag.id)) { moveItemToCat(drag.id, current.id); setDrag(null); } }}>
-                    {current.items.map((i, n) => matches(i) && (
-                      <div key={i.id} draggable={!searching} onDragStart={() => setDrag({ kind: 'item', id: i.id })} onDragEnd={() => { setDrag(null); setOver(null); }}
+                    {current.items.map((i, n) => (
+                      <ItemRow key={i.id} item={i} n={n} last={n === current.items.length - 1} dragging={drag?.id === i.id} over={over === i.id && drag?.kind === 'item'}
+                        onOpen={() => setOpen(i)} onPatch={(patch) => patchItem(i.id, patch)}
+                        onDragStart={() => setDrag({ kind: 'item', id: i.id })} onDragEnd={() => { setDrag(null); setOver(null); }}
                         onDragOver={(e) => { if (drag?.kind === 'item') { e.preventDefault(); setOver(i.id); } }} onDrop={(e) => { e.stopPropagation(); dropOnItem(i.id); }}
-                        className="row" style={{
-                          gap: 10, padding: '6px 4px', borderTop: '1px solid var(--line-soft)', minHeight: 58,
-                          opacity: drag?.id === i.id ? 0.4 : 1, background: over === i.id && drag?.kind === 'item' ? 'var(--accent-soft)' : undefined,
-                        }}>
-                        <span className="muted" style={{ cursor: searching ? 'default' : 'grab', display: 'grid', placeItems: 'center', width: 24 }} title={searching ? 'ล้างช่องค้นหาก่อนจึงจะลากได้' : 'ลากเพื่อจัดลำดับ'}><Icon name="grip" /></span>
-                        <span className="muted num" style={{ width: 26, textAlign: 'right', fontSize: 14 }}>{n + 1}</span>
-                        <button className="row" onClick={() => setOpen(i)} style={{ gap: 10, flex: 1, minWidth: 0, background: 'none', border: 0, textAlign: 'left', cursor: 'pointer', padding: 0, font: 'inherit' }}>
-                          <span style={{ width: 42, height: 42, borderRadius: 8, background: tintFor(i.id), overflow: 'hidden', display: 'grid', placeItems: 'center', flex: 'none' }}>
-                            {i.image_url ? <img src={i.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <BowlIcon size={22} />}
-                          </span>
-                          <span style={{ minWidth: 0 }}>
-                            <span style={{ fontWeight: 600 }}>{i.name}</span>
-                            {!i.active && <span className="pill" style={{ marginLeft: 8, background: 'var(--line-soft)' }}>ปิดขาย</span>}
-                            {i.station === 'bar' && <span className="pill" style={{ marginLeft: 8, background: 'var(--info-soft)', color: 'var(--info-ink)' }}>บาร์</span>}
-                          </span>
-                        </button>
-                        <b style={{ whiteSpace: 'nowrap' }}>{formatBaht(i.price)}</b>
-                        <button className="btn" style={{ minHeight: 40, padding: '0 10px' }} disabled={searching || n === 0} aria-label={`เลื่อน ${i.name} ขึ้น`}
-                          onClick={() => reorderItems(current.id, swap(current.items.map((x) => x.id), i.id, -1))}><Icon name="up" /></button>
-                        <button className="btn" style={{ minHeight: 40, padding: '0 10px' }} disabled={searching || n === current.items.length - 1} aria-label={`เลื่อน ${i.name} ลง`}
-                          onClick={() => reorderItems(current.id, swap(current.items.map((x) => x.id), i.id, 1))}><Icon name="down" /></button>
-                        <button className="btn" style={{ minHeight: 40, padding: '0 10px' }} aria-label={`แก้ ${i.name}`} onClick={() => setOpen(i)}><Icon name="edit" /></button>
-                      </div>
+                        onUp={() => reorderItems(current.id, swap(current.items.map((x) => x.id), i.id, -1))}
+                        onDown={() => reorderItems(current.id, swap(current.items.map((x) => x.id), i.id, 1))} />
                     ))}
                   </div>
-                  {searching && <p className="muted" style={{ margin: 0, fontSize: 13 }}>กำลังค้นหาอยู่ — ล้างช่องค้นหาเพื่อจัดลำดับ</p>}
                 </section>
               ) : <p className="muted">ยังไม่มีหมวด — เพิ่มหมวดแรกทางซ้ายได้เลย</p>}
             </div>
@@ -303,6 +303,70 @@ function CategoryHeader({ section, onRename, onDelete }: { section: { id: string
           <button className="btn btn-warn" disabled={section.items.length > 0} title={section.items.length ? 'ย้ายเมนูออกก่อน' : undefined} onClick={onDelete}><Icon name="trash" /> ลบหมวด</button>
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * One dish. Everything done daily is on the row itself: sold out today, price, and whether the food cost is healthy.
+ * Without the ordering props (search results) the row has no drag handle or arrows.
+ */
+function ItemRow({ item: i, n, last, dragging, over, onOpen, onPatch, onDragStart, onDragEnd, onDragOver, onDrop, onUp, onDown }: {
+  item: any; n?: number; last?: boolean; dragging?: boolean; over?: boolean;
+  onOpen: () => void; onPatch: (p: { active?: boolean; price?: number }) => void;
+  onDragStart?: () => void; onDragEnd?: () => void; onDragOver?: (e: React.DragEvent) => void; onDrop?: (e: React.DragEvent) => void;
+  onUp?: () => void; onDown?: () => void;
+}) {
+  const ordered = n !== undefined;
+  const [editing, setEditing] = useState(false);
+  const [price, setPrice] = useState('');
+  const costly = i.recipe_lines > 0 && i.food_cost_pct > TARGET_PCT;
+  const savePrice = () => {
+    const v = Math.round(Number(price.replace(/,/g, '')) * 100);
+    setEditing(false);
+    if (price.trim() && Number.isFinite(v) && v >= 0 && v !== i.price) onPatch({ price: v });
+  };
+  return (
+    <div draggable={ordered} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragOver={onDragOver} onDrop={onDrop}
+      className="row" style={{
+        gap: 10, padding: '6px 4px', borderTop: '1px solid var(--line-soft)', minHeight: 58, flexWrap: 'wrap',
+        opacity: dragging ? 0.4 : i.active ? 1 : 0.6, background: over ? 'var(--accent-soft)' : undefined,
+      }}>
+      {ordered && <span className="muted" style={{ cursor: 'grab', display: 'grid', placeItems: 'center', width: 24 }} title="ลากเพื่อจัดลำดับ"><Icon name="grip" /></span>}
+      {ordered && <span className="muted num" style={{ width: 26, textAlign: 'right', fontSize: 14 }}>{n + 1}</span>}
+      <button className="row" onClick={onOpen} style={{ gap: 10, flex: '1 1 200px', minWidth: 0, background: 'none', border: 0, textAlign: 'left', cursor: 'pointer', padding: 0, font: 'inherit' }}>
+        <span style={{ width: 42, height: 42, borderRadius: 8, background: tintFor(i.id), overflow: 'hidden', display: 'grid', placeItems: 'center', flex: 'none' }}>
+          {i.image_url ? <img src={i.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <BowlIcon size={22} />}
+        </span>
+        <span style={{ minWidth: 0 }}>
+          <span style={{ fontWeight: 600 }}>{i.name}</span>
+          {i.station === 'bar' && <span className="pill" style={{ marginLeft: 8, background: 'var(--info-soft)', color: 'var(--info-ink)' }}>บาร์</span>}
+        </span>
+      </button>
+      <span className="pill" title={i.recipe_lines ? 'Food cost ตามสูตร' : 'ยังไม่ได้ใส่สูตร'}
+        style={{ background: costly ? 'var(--warn-soft)' : 'var(--line-soft)', color: costly ? 'var(--warn-ink)' : i.recipe_lines ? 'var(--accent-ink)' : 'var(--muted)', whiteSpace: 'nowrap' }}>
+        {i.recipe_lines ? `ต้นทุน ${i.food_cost_pct}%` : 'ไม่มีสูตร'}
+      </span>
+      {editing ? (
+        <input aria-label={`ราคา ${i.name}`} autoFocus inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} onBlur={savePrice}
+          onKeyDown={(e) => { if (e.key === 'Enter') savePrice(); if (e.key === 'Escape') setEditing(false); }}
+          style={{ ...inputStyle, width: 100, height: 40, textAlign: 'right' }} />
+      ) : (
+        <button className="btn" style={{ minHeight: 40, minWidth: 84, justifyContent: 'flex-end', fontWeight: 700 }} aria-label={`แก้ราคา ${i.name}`} title="แตะเพื่อแก้ราคา"
+          onClick={() => { setPrice((i.price / 100).toFixed(2).replace(/\.00$/, '')); setEditing(true); }}>{formatBaht(i.price)}</button>
+      )}
+      <label className="row" style={{ gap: 6, minHeight: 40, cursor: 'pointer', fontSize: 14 }} title={i.active ? 'กดเพื่อปิดขาย (หมดวันนี้)' : 'ปิดขายอยู่ กดเพื่อเปิดขาย'}>
+        <input type="checkbox" role="switch" checked={i.active} onChange={(e) => onPatch({ active: e.target.checked })} aria-label={`เปิดขาย ${i.name}`}
+          style={{ width: 22, height: 22, accentColor: 'var(--accent)' }} />
+        <span style={{ color: i.active ? 'var(--accent-ink)' : 'var(--muted)', minWidth: 46 }}>{i.active ? 'เปิดขาย' : 'ปิดขาย'}</span>
+      </label>
+      {ordered && (
+        <>
+          <button className="btn" style={{ minHeight: 40, padding: '0 10px' }} disabled={n === 0} aria-label={`เลื่อน ${i.name} ขึ้น`} onClick={onUp}><Icon name="up" /></button>
+          <button className="btn" style={{ minHeight: 40, padding: '0 10px' }} disabled={last} aria-label={`เลื่อน ${i.name} ลง`} onClick={onDown}><Icon name="down" /></button>
+        </>
+      )}
+      <button className="btn" style={{ minHeight: 40, padding: '0 10px' }} aria-label={`แก้ ${i.name}`} onClick={onOpen}><Icon name="edit" /></button>
     </div>
   );
 }
