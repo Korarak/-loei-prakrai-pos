@@ -11,6 +11,7 @@ import { auditRoutes } from './routes/audit.ts';
 import { orderRoutes } from './routes/orders.ts';
 import { platformRoutes } from './routes/platform.ts';
 import { printerRoutes } from './routes/printers.ts';
+import { qrRoutes } from './routes/qr.ts';
 import { reportRoutes } from './routes/reports.ts';
 import { shiftRoutes } from './routes/shifts.ts';
 import { shopRoutes } from './routes/shop.ts';
@@ -68,6 +69,7 @@ export function buildApp(deps: AppDeps) {
   app.register(async (a) => shiftRoutes(a, ctx));
   app.register(async (a) => printerRoutes(a, ctx));
   app.register(async (a) => uploadRoutes(a, ctx));
+  app.register(async (a) => qrRoutes(a, ctx));
   app.register(async (a) => auditRoutes(a, ctx));
   app.register(async (a) => platformRoutes(a, ctx));
   return app;

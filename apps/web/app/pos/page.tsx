@@ -8,6 +8,7 @@ import { api, errText } from '@/lib/api';
 import { Icon } from '@/lib/icons';
 import { Sheet } from '@/lib/owner';
 import { TablesSection } from '../owner/settings/TablesSection';
+import { QrInbox } from './QrInbox';
 import { terminalFor, useMe } from '@/lib/useMe';
 import { TopBar } from './TopBar';
 
@@ -76,6 +77,7 @@ export default function Tables() {
           </div>
         )}
         {err && <div className="error" role="alert">{err}</div>}
+        <QrInbox onChanged={load} />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14 }}>
           {tables?.map((t) => {
             const on = !!t.order_id;

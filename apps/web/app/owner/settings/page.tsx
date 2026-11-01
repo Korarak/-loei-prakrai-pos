@@ -9,6 +9,7 @@ import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
 import { PrintersSection } from './PrintersSection';
 import { SecuritySection } from './SecuritySection';
+import { QrSection } from './QrSection';
 import { TablesSection } from './TablesSection';
 import { Icon } from '@/lib/icons';
 
@@ -161,6 +162,7 @@ export default function Settings() {
         {msg && <div style={{ color: 'var(--accent-ink)', fontWeight: 600 }}>{msg}</div>}
         <div><button className="btn btn-primary btn-lg" onClick={save} disabled={!owner || taxIdBad || branchBad || ppBad || !f.name.trim()} style={{ minWidth: 200 }}><Icon name="save" /> บันทึก</button></div>
         <TablesSection canEdit={me.role === 'owner' || me.role === 'manager'} />
+        <QrSection canEdit={me.role === 'owner' || me.role === 'manager'} isOwner={me.role === 'owner'} />
         <PrintersSection me={me} />
         <SecuritySection isOwner={me.role === 'owner'} />
         <section className="card" style={{ padding: 18, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>

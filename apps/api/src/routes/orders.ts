@@ -132,6 +132,26 @@ async function resolveOptions(c: Tx, itemId: string, ids: string[]): Promise<Opt
     .map((m) => ({ id: m.id, name: m.name, price: m.price }));
 }
 
+/** Add a dish to an open bill, priced from the live menu; the same dish with the same note and options merges into one line. */
+export async function addLine(c: Tx, orderId: string, b: { menuItemId: string; qty: number; note?: string; options: string[] }) {
+  const item = await one(c, `SELECT * FROM menu_items WHERE id = $1 AND active`, [b.menuItemId]);
+  if (!item) throw new HttpError(404, 'menu_item_not_found');
+  const options = await resolveOptions(c, item.id, b.options);
+  const unitPrice = item.price + options.reduce((s, o) => s + o.price, 0);
+  const same = await one(c,
+    `SELECT id FROM order_lines WHERE order_id = $1 AND menu_item_id = $2 AND status = 'new'
+        AND coalesce(note, '') = $3 AND unit_price = $4 AND options = $5::jsonb`,
+    [orderId, item.id, b.note ?? '', unitPrice, JSON.stringify(options)]);
+  if (same) return one(c, `UPDATE order_lines SET qty = qty + $2 WHERE id = $1 RETURNING *`, [same.id, b.qty]);
+  return one(c,
+    `INSERT INTO order_lines (order_id, menu_item_id, name, unit_price, qty, vat_exempt, note, options)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    [orderId, item.id, item.name, unitPrice, b.qty, item.vat_exempt, b.note || null, JSON.stringify(options)]);
+}
+
+/** Check the choices against the groups attached to the dish and price them (exported for QR ordering). */
+export { resolveOptions };
+
 function requireOpen(order: { status: string }) {
   if (order.status !== 'open') throw new HttpError(409, 'order_closed');
 }
@@ -184,20 +204,8 @@ export async function orderRoutes(app: FastifyInstance, ctx: Ctx) {
     return tx(req.session, async (c) => {
       const { order } = await loadOrder(c, id, true);
       requireOpen(order);
-      const item = await one(c, `SELECT * FROM menu_items WHERE id = $1 AND active`, [b.menuItemId]);
-      if (!item) throw new HttpError(404, 'menu_item_not_found');
-      const options = await resolveOptions(c, item.id, b.options);
-      const unitPrice = item.price + options.reduce((s, o) => s + o.price, 0);
-      const same = await one(c,
-        `SELECT id FROM order_lines WHERE order_id = $1 AND menu_item_id = $2 AND status = 'new'
-            AND coalesce(note, '') = $3 AND unit_price = $4 AND options = $5::jsonb`,
-        [id, item.id, b.note ?? '', unitPrice, JSON.stringify(options)]);
       reply.status(201);
-      if (same) return one(c, `UPDATE order_lines SET qty = qty + $2 WHERE id = $1 RETURNING *`, [same.id, b.qty]);
-      return one(c,
-        `INSERT INTO order_lines (order_id, menu_item_id, name, unit_price, qty, vat_exempt, note, options)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-        [id, item.id, item.name, unitPrice, b.qty, item.vat_exempt, b.note || null, JSON.stringify(options)]);
+      return addLine(c, id, b);
     });
   });
 
