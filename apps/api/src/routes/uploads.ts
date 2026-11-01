@@ -20,7 +20,8 @@ function sniff(b: Buffer): 'jpg' | 'png' | 'webp' | null {
   return null;
 }
 
-/** Menu photos: stored on disk under UPLOAD_DIR/<tenant>/, referenced from menu_items.image_url, served only to that shop's signed-in staff. */
+/** Menu photos: stored on disk under UPLOAD_DIR/<tenant>/, referenced from menu_items.image_url. Served without sign-in (customers scanning the table QR need them),
+ * but only while a menu item or the shop logo still points at the file; names are random UUIDs. */
 export async function uploadRoutes(app: FastifyInstance, ctx: Ctx) {
   const root = resolve(ctx.uploadDir ?? './uploads');
 
@@ -124,15 +125,18 @@ export async function uploadRoutes(app: FastifyInstance, ctx: Ctx) {
     return { logo_url: null };
   });
 
-  app.get('/api/uploads/:tenant/:file', { preHandler: ctx.auth() }, async (req, reply) => {
+  app.get('/api/uploads/:tenant/:file', async (req, reply) => {
     const { tenant, file } = z.object({ tenant: z.string().uuid(), file: z.string().regex(FILE) }).parse(req.params);
-    if (tenant !== req.session.tenantId) throw new HttpError(404, 'not_found');
+    const url = `/api/uploads/${tenant}/${file}`;
+    const used = (await withPlatform(ctx.db, (c) => one(c, `SELECT 1 AS ok FROM tenants WHERE id = $1 AND logo_url = $2`, [tenant, url])))
+      || (await withTenant(ctx.db, tenant, (c) => one(c, `SELECT 1 AS ok FROM menu_items WHERE image_url = $1 LIMIT 1`, [url])));
+    if (!used) throw new HttpError(404, 'not_found');
     const path = join(root, tenant, file);
     if (!path.startsWith(root + sep)) throw new HttpError(404, 'not_found');
     const data = await readFile(path).catch(() => null);
     if (!data) throw new HttpError(404, 'not_found');
     // file names are random and never reused, so the browser may cache them for good
-    return reply.header('content-type', TYPES[file.split('.')[1]!]).header('cache-control', 'private, max-age=31536000, immutable')
+    return reply.header('content-type', TYPES[file.split('.')[1]!]).header('cache-control', 'public, max-age=31536000, immutable')
       .header('x-content-type-options', 'nosniff').send(data);
   });
 }

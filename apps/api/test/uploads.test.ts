@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { afterAll, describe, expect, it } from 'vitest';
 import { makeApp, newShop } from './helpers.ts';
 
@@ -8,7 +9,7 @@ const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a
 const bearer = (t: string) => ({ authorization: `Bearer ${t}` });
 
 describe('menu photos', () => {
-  it('uploads, serves to the same shop only, replaces and removes', async () => {
+  it('uploads, serves without sign-in while referenced (QR customers), replaces and removes', async () => {
     const a = await newShop(app);
     const b = await newShop(app);
     const id = a.item('ข้าวผัดกุ้ง');
@@ -23,8 +24,13 @@ describe('menu photos', () => {
     expect(got.statusCode).toBe(200);
     expect(got.headers['content-type']).toBe('image/png');
     expect(got.rawPayload.equals(PNG)).toBe(true);
-    expect((await app.inject({ method: 'GET', url })).statusCode).toBe(401);
-    expect((await app.inject({ method: 'GET', url, headers: bearer(b.token) })).statusCode).toBe(404);
+    const anon = await app.inject({ method: 'GET', url });   // a customer who scanned the table QR has no session
+    expect(anon.statusCode).toBe(200);
+    expect(anon.headers['content-type']).toBe('image/png');
+    const [, , , tenantA] = url.split('/');
+    expect((await app.inject({ method: 'GET', url: `/api/uploads/${tenantA}/${randomUUID()}.png` })).statusCode).toBe(404); // not referenced
+    expect((await app.inject({ method: 'GET', url: url.replace(tenantA!, randomUUID()) })).statusCode).toBe(404);
+    void b;
 
     const again = await app.inject({ method: 'POST', url: `/api/menu/items/${id}/image`, headers: png, payload: PNG });
     expect(again.json().image_url).not.toBe(url);

@@ -29,8 +29,8 @@ const H = ({ n, children, hint }: { n: number; children: React.ReactNode; hint?:
  * One panel for adding and editing a dish: the basics, the questions it asks, and its recipe.
  * Nothing is saved until the single button at the bottom, and the cost updates as you type.
  */
-export function ItemSheet({ item, ings, cats, groups, items, vatRatio, defaultCategoryId, onClose, onSaved, onIngsChanged }: {
-  item: any | null; defaultCategoryId?: string; ings: any[]; cats: any[]; groups: any[]; items: any[]; vatRatio: number;
+export function ItemSheet({ item, ings, cats, groups, items, vatRatio, vatOn, vatIncl, defaultCategoryId, onClose, onSaved, onIngsChanged }: {
+  item: any | null; defaultCategoryId?: string; ings: any[]; cats: any[]; groups: any[]; items: any[]; vatRatio: number; vatOn: boolean; vatIncl: boolean;
   onClose: () => void; onSaved: () => void; onIngsChanged: () => void;
 }) {
   const confirm = useConfirm();
@@ -39,6 +39,7 @@ export function ItemSheet({ item, ings, cats, groups, items, vatRatio, defaultCa
   const [station, setStation] = useState<'kitchen' | 'bar'>(item?.station ?? 'kitchen');
   const [price, setPrice] = useState(item ? (item.price / 100).toFixed(2) : '');
   const [active, setActive] = useState<boolean>(item?.active ?? true);
+  const [vatable, setVatable] = useState<boolean>(!(item?.vat_exempt ?? false));
   const [groupIds, setGroupIds] = useState<string[]>(item?.group_ids ?? []);
   const [lines, setLines] = useState<Line[] | null>(item ? null : []);
   const [image, setImage] = useState<string | null>(item?.image_url ?? null);
@@ -61,7 +62,8 @@ export function ItemSheet({ item, ings, cats, groups, items, vatRatio, defaultCa
   const rows = lines ?? [];
   const cost = rows.reduce((s, l) => s + lineCost(byId.get(l.ingredientId), Number(l.qty)), 0);
   const newPrice = toSatang(price);
-  const exVat = Number.isFinite(newPrice) ? Math.round(newPrice * vatRatio) : NaN;
+  const splitVat = vatOn && vatIncl && vatable;
+  const exVat = Number.isFinite(newPrice) ? (splitVat ? Math.round(newPrice * vatRatio) : newPrice) : NaN;
   const set = (i: number, patch: Partial<Line>) => setLines(rows.map((l, k) => (k === i ? { ...l, ...patch } : l)));
   const recipeOk = lines !== null && rows.every((l) => l.ingredientId && Number(l.qty) > 0);
   const valid = name.trim() && Number.isFinite(newPrice) && newPrice >= 0 && recipeOk;
@@ -87,7 +89,7 @@ export function ItemSheet({ item, ings, cats, groups, items, vatRatio, defaultCa
   async function save() {
     setBusy(true); setErr('');
     try {
-      const body = { name: name.trim(), categoryId: categoryId || null, price: newPrice, station, active };
+      const body = { name: name.trim(), categoryId: categoryId || null, price: newPrice, vatExempt: !vatable, station, active };
       let itemId = id;
       if (!itemId) { itemId = (await api('POST', '/api/menu/items', body)).id as string; setSavedId(itemId); }
       else await api('PATCH', `/api/menu/items/${itemId}`, body);
@@ -130,6 +132,21 @@ export function ItemSheet({ item, ings, cats, groups, items, vatRatio, defaultCa
             <label className="field">ราคาขาย (บาท){' '}
               <input inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="เช่น 249" />
             </label>
+            <label className="row" style={{ fontSize: 16, gap: 10 }}>
+              <input type="checkbox" checked={vatable} onChange={(e) => setVatable(e.target.checked)} style={{ width: 24, height: 24, accentColor: 'var(--accent)' }} />
+              คิด VAT 7% กับเมนูนี้
+            </label>
+            <div className="muted" style={{ fontSize: 14, lineHeight: 1.5 }} aria-live="polite">
+              {!vatOn
+                ? 'ร้านยังไม่ได้จด VAT — ตอนนี้ไม่มีการคิด VAT ในบิล (เปิดได้ที่ ตั้งค่าร้าน เมื่อจดทะเบียนแล้ว)'
+                : !vatable
+                  ? 'เมนูนี้ไม่คิด VAT (ยกเว้นภาษี)'
+                  : vatIncl
+                    ? Number.isFinite(newPrice) && newPrice > 0
+                      ? `ราคา ${formatBaht(newPrice)} รวม VAT แล้ว (ก่อน VAT ${formatBaht(exVat)} · VAT ${formatBaht(newPrice - exVat)})`
+                      : 'ราคาที่ใส่รวม VAT แล้ว — ลูกค้าจ่ายตามราคานี้'
+                    : 'ราคาที่ใส่ยังไม่รวม VAT — ระบบบวก VAT ตอนคิดเงิน'}
+            </div>
           </div>
         </div>
 

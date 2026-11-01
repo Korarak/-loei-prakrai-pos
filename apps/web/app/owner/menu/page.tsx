@@ -71,7 +71,7 @@ export default function MenuPage() {
   const overTarget = withRecipe.filter((i) => i.food_cost_pct > TARGET_PCT).length;
   const vatRatio = useMemo(() => {
     const ref = items?.find((i) => i.price > 0 && !i.vat_exempt);
-    return ref ? ref.price_ex_vat / ref.price : 1;
+    return ref ? ref.price_ex_vat / ref.price : 100 / 107;
   }, [items]);
 
   async function run(fn: () => Promise<unknown>) {
@@ -230,6 +230,7 @@ export default function MenuPage() {
       </main>
       {(open || adding) && (
         <ItemSheet item={open} ings={ings} cats={cats} groups={groups} items={items ?? []} vatRatio={vatRatio}
+          vatOn={!!me?.tenant.vat_registered} vatIncl={!!me?.tenant.price_includes_vat}
           defaultCategoryId={adding && current && current.id !== NO_CAT ? current.id : undefined}
           onClose={() => { setOpen(null); setAdding(false); }} onSaved={() => { setOpen(null); setAdding(false); load(); }}
           onIngsChanged={() => api('GET', '/api/ingredients').then(setIngs)} />
