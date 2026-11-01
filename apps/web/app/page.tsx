@@ -271,7 +271,7 @@ export default function Landing() {
 
       <footer className="lp-foot">
         <div className="lp-wrap">
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><Sparkle size={18} /> ประกาย POS · ตั้งชื่อตามคุณประกายดาว ผลสอน</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><Sparkle size={18} /> ประกาย POS</span>
           <nav aria-label="ลิงก์ท้ายหน้า">
             <a href="#features">ความสามารถ</a>
             <a href="#faq">คำถามที่พบบ่อย</a>
