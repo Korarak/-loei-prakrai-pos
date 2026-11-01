@@ -116,7 +116,7 @@ export default function OrderPage() {
         <aside className="order-aside">
           <div className="row" style={{ padding: '18px 20px 14px', borderBottom: '1px solid var(--line-soft)' }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 20, fontWeight: 700 }}>รายการสั่ง</div>
+              <div className="row" style={{ gap: 8, fontSize: 20, fontWeight: 700 }}><Icon name="receipt" size={22} />รายการสั่ง</div>
               <div className="muted" style={{ fontSize: 14 }}>บิล #{view?.order.bill_no} · {live.reduce((s, l) => s + l.qty, 0)} รายการ</div>
             </div>
           </div>

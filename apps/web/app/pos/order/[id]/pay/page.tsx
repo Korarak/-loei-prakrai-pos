@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
-import { Icon } from '@/lib/icons';
+import { Icon, type IconName } from '@/lib/icons';
 import { BackIcon } from '@/lib/ui';
 import { PromptPayQr } from '@/lib/PromptPayQr';
 import { terminalFor, useMe } from '@/lib/useMe';
@@ -15,6 +15,7 @@ type Method = 'cash' | 'promptpay' | 'card' | 'transfer';
 type DocType = 'ABB' | 'FULL' | 'RECEIPT';
 
 const METHODS: [Method, string][] = [['cash', 'เงินสด'], ['promptpay', 'พร้อมเพย์'], ['card', 'บัตร'], ['transfer', 'โอน']];
+const METHOD_ICON: Record<Method, IconName> = { cash: 'coins', promptpay: 'qr', card: 'wallet', transfer: 'send' };
 
 export default function PayPage() {
   const { id } = useParams<{ id: string }>();
@@ -91,7 +92,7 @@ export default function PayPage() {
 
       <div className="pay-body">
         <section aria-label="สรุปบิล" className="card pay-summary">
-          <div style={{ fontSize: 18, fontWeight: 700, paddingBottom: 8 }}>สรุปบิล</div>
+          <div style={{ paddingBottom: 8 }}><div className="row" style={{ gap: 10 }}><span style={{ width: 26, height: 26, borderRadius: 13, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontSize: 14, fontWeight: 700 }}>1</span><Icon name="receipt" size={20} /><span style={{ fontSize: 18, fontWeight: 700 }}>สรุปบิล</span></div></div>
           {view.lines.filter((l: any) => l.status !== 'void').map((l: any) => (
             <div key={l.id} className="row" style={{ padding: '10px 0', borderBottom: '1px solid var(--line-soft)', gap: 10 }}>
               <span className="muted" style={{ width: 30 }}>{l.qty}×</span>
@@ -115,12 +116,13 @@ export default function PayPage() {
             <span className="muted" style={{ fontSize: 18, fontWeight: 600 }}>ยอดชำระ</span>
             <span style={{ fontSize: 56, fontWeight: 700 }}>฿{formatBaht(payable)}</span>
           </div>
+          <div className="row" style={{ gap: 10 }}><span style={{ width: 26, height: 26, borderRadius: 13, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontSize: 14, fontWeight: 700 }}>2</span><Icon name="wallet" size={20} /><span style={{ fontSize: 18, fontWeight: 700 }}>เลือกช่องทางชำระ</span></div>
           <div role="tablist" aria-label="ช่องทางชำระ" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
             {METHODS.map(([m, label]) => (
               <button key={m} role="tab" aria-selected={method === m} onClick={() => setMethod(m)}
                 style={{ height: 56, borderRadius: 14, fontSize: 17, fontWeight: method === m ? 700 : 500,
                   border: method === m ? '2px solid var(--accent)' : '1px solid var(--line-2)',
-                  background: method === m ? 'var(--accent-soft)' : '#fff', color: method === m ? 'var(--accent-ink)' : 'var(--ink)' }}>{label}</button>
+                  background: method === m ? 'var(--accent-soft)' : '#fff', color: method === m ? 'var(--accent-ink)' : 'var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Icon name={METHOD_ICON[m]} size={22} />{label}</button>
             ))}
           </div>
           {method === 'cash' ? (
@@ -162,7 +164,7 @@ export default function PayPage() {
         </section>
 
         <section aria-label="เอกสาร" className="pay-doc">
-          <div style={{ fontSize: 18, fontWeight: 700 }}>เอกสารที่ออก</div>
+          <div className="row" style={{ gap: 10 }}><span style={{ width: 26, height: 26, borderRadius: 13, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontSize: 14, fontWeight: 700 }}>3</span><Icon name="fileText" size={20} /><span style={{ fontSize: 18, fontWeight: 700 }}>เอกสารที่ออก</span></div>
           {docOptions.map(([d, label, sub, enabled]) => (
             <button key={d} disabled={!enabled} aria-pressed={docChoice === d} onClick={() => setDoc(d)} style={choiceStyle(docChoice === d, enabled)}>
               <span style={{ width: 22, height: 22, flexShrink: 0, borderRadius: 11, border: docChoice === d ? '7px solid var(--accent)' : '2px solid #9AA39C' }} />
