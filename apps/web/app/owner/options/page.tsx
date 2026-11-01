@@ -3,7 +3,7 @@
 import { formatBaht } from '@prakai/core';
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
-import { Sheet, toSatang, UNIT } from '@/lib/owner';
+import { PageTitle, Sheet, toSatang, UNIT } from '@/lib/owner';
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
@@ -48,7 +48,7 @@ export default function OptionsPage() {
         {err && <div className="error" role="alert">{err}</div>}
         <section className="card" style={{ padding: '12px 18px', display: 'grid', gap: 12 }}>
           <div className="row">
-            <h1 style={{ margin: 0, fontSize: 20 }}>ตัวเลือกเมนู</h1>
+            <PageTitle icon="sliders" tone="menu" size={20}>ตัวเลือกเมนู</PageTitle>
             <span className="muted" style={{ fontSize: 14 }}>ระดับเผ็ด ไซส์ ท็อปปิ้ง — ติดกับเมนูที่เลือก หน้าขายจะถามตอนแตะเมนู</span>
             <span className="spacer" />
             <button className="btn btn-primary" onClick={() => setEdit({ name: '', minSelect: 0, maxSelect: 1, active: true, itemIds: [], options: [blankOpt(), blankOpt()] })}><Icon name="plus" /> เพิ่มกลุ่มตัวเลือก</button>

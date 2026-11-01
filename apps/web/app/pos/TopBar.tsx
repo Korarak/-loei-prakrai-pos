@@ -20,7 +20,7 @@ export function TopBar({ me, active, children }: { me: Me | null; active?: 'tabl
     router.push(to);
   }
   const tab = (on: boolean): React.CSSProperties => ({
-    height: 48, display: 'flex', alignItems: 'center', padding: '0 18px', borderRadius: 12, fontSize: 17,
+    height: 48, display: 'flex', alignItems: 'center', gap: 8, padding: '0 18px', borderRadius: 12, fontSize: 17,
     background: on ? 'var(--accent-soft)' : 'transparent', color: on ? 'var(--accent-ink)' : 'var(--ink)', fontWeight: on ? 600 : 500,
   });
   const canOwn = me && (me.role === 'owner' || me.role === 'manager');
@@ -28,10 +28,10 @@ export function TopBar({ me, active, children }: { me: Me | null; active?: 'tabl
   return (
     <header className="topbar no-print">
       <Brand />
-      {active && <Link href="/pos" style={tab(active === 'tables')}>โต๊ะ</Link>}
-      {active && canCash && <Link href="/pos/shift" style={tab(active === 'shift')}>กะ / ลิ้นชัก</Link>}
-      {active && canOwn && <Link href="/owner/profit" style={tab(active === 'owner')}>หลังบ้าน</Link>}
-      {active && me?.platformAdmin && <Link href="/platform" style={tab(active === 'platform')}>ผู้ดูแลระบบ</Link>}
+      {active && <Link href="/pos" style={tab(active === 'tables')}><Icon name="table" size={20} /> โต๊ะ</Link>}
+      {active && canCash && <Link href="/pos/shift" style={tab(active === 'shift')}><Icon name="wallet" size={20} /> กะ / ลิ้นชัก</Link>}
+      {active && canOwn && <Link href="/owner/profit" style={tab(active === 'owner')}><Icon name="store" size={20} /> หลังบ้าน</Link>}
+      {active && me?.platformAdmin && <Link href="/platform" style={tab(active === 'platform')}><Icon name="shield" size={20} /> ผู้ดูแลระบบ</Link>}
       <span className="spacer" />
       {children}
       {me?.tenant.logo_url && <img src={me.tenant.logo_url} alt="" style={{ height: 34, maxWidth: 90, objectFit: 'contain' }} />}

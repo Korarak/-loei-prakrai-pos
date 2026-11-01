@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import { useConfirm } from './dialog';
-import { Icon } from './icons';
+import { Icon, type IconName } from './icons';
 
 /** Bangkok calendar month, e.g. 2026-09 — tax and cost periods follow Thai time. */
 export const thisMonth = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date()).slice(0, 7);
@@ -69,6 +69,19 @@ export function Sheet({ title, onClose, children, wide, noConfirm }: { title: st
         </div>
         {children}
       </div>
+    </div>
+  );
+}
+
+/** Page or section heading led by a tinted icon tile; `tone` picks the colour family (same as the back-office nav groups). */
+export function PageTitle({ icon, tone = 'menu', sub, as = 'h1', size = 22, id, children }: {
+  icon: IconName; tone?: 'setup' | 'menu' | 'sell' | 'money' | 'system'; sub?: React.ReactNode; as?: 'h1' | 'h2'; size?: number; id?: string; children: React.ReactNode;
+}) {
+  const H = as;
+  return (
+    <div className={`ptitle tone-${tone}`}>
+      <span className={`ptitle-ico${as === 'h2' ? ' sm' : ''}`}><Icon name={icon} size={as === 'h2' ? 20 : 24} /></span>
+      <div><H id={id} style={{ fontSize: size }}>{children}</H>{sub && <small>{sub}</small>}</div>
     </div>
   );
 }

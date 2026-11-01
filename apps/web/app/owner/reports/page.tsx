@@ -10,6 +10,7 @@ import { DaySection } from './DaySection';
 import { InventorySection } from './InventorySection';
 import { VatReturnSection } from './VatReturnSection';
 import { Icon } from '@/lib/icons';
+import { PageTitle } from '@/lib/owner';
 
 const thisMonth = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date()).slice(0, 7);
 const TH_MONTH = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
@@ -65,7 +66,7 @@ export default function Reports() {
 
         <section className="card" style={{ padding: '12px 18px' }}>
           <div className="row" style={{ paddingBottom: 8 }}>
-            <h1 style={{ margin: 0, fontSize: 20 }}>รายงานภาษีขาย · {monthLabel(month)}</h1>
+            <PageTitle icon="percent" tone="money" size={20}>รายงานภาษีขาย · {monthLabel(month)}</PageTitle>
             <span className="muted" style={{ fontSize: 14 }}>ใบอย่างย่อสรุปรายวันต่อเครื่อง · ใบเต็มรูปและใบลดหนี้แสดงรายใบ{rep?.voidedCount ? ` · ยกเลิก ${rep.voidedCount} ใบ (ไม่รวมในยอด)` : ''}</span>
             <span className="spacer" />
             <button className="btn" onClick={() => window.print()}><Icon name="print" /> พิมพ์ / PDF</button>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
 import { useConfirm } from '@/lib/dialog';
 import { Icon } from '@/lib/icons';
+import { PageTitle } from '@/lib/owner';
 
 interface Row { id: string; name: string; seats: number; order_id: string | null }
 
@@ -39,7 +40,7 @@ export function TablesSection({ canEdit, bare, onChanged }: { canEdit: boolean; 
   return (
     <section className={bare ? undefined : 'card'} style={{ padding: bare ? 0 : 18, display: 'grid', gap: 14 }} aria-labelledby="tables-h">
       <div className="row" style={{ flexWrap: 'wrap' }}>
-        <h2 id="tables-h" style={{ margin: 0, fontSize: 20 }}>โต๊ะในร้าน</h2>
+        <PageTitle icon="table" tone="setup" as="h2" size={20} id="tables-h">โต๊ะในร้าน</PageTitle>
         <span className="muted" style={{ fontSize: 14 }}>{rows ? `${rows.length} โต๊ะ · มีลูกค้า ${busy}` : 'กำลังโหลด…'}</span>
       </div>
       {!canEdit && <div className="error">เฉพาะเจ้าของร้านหรือผู้จัดการแก้ผังโต๊ะได้</div>}

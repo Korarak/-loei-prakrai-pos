@@ -6,6 +6,7 @@ import { useConfirm } from '@/lib/dialog';
 import { Icon } from '@/lib/icons';
 import { agentOnline, printTicket, thaiDateTime, usePrinters, type Printer } from '@/lib/print';
 import type { Me } from '@/lib/useMe';
+import { PageTitle } from '@/lib/owner';
 
 const ROLE: Record<Printer['role'], string> = { receipt: 'ใบเสร็จ', kitchen: 'ครัว', bar: 'บาร์น้ำ' };
 const small: React.CSSProperties = { height: 44, borderRadius: 10, border: '1px solid #c9cfc7', padding: '0 10px', fontSize: 16, background: '#fff' };
@@ -58,7 +59,7 @@ export function PrintersSection({ me }: { me: Me }) {
   return (
     <section className="card" style={{ padding: 18, display: 'grid', gap: 14 }} aria-labelledby="printers-h">
       <div className="row" style={{ flexWrap: 'wrap' }}>
-        <h2 id="printers-h" style={{ margin: 0, fontSize: 20 }}>เครื่องพิมพ์</h2>
+        <PageTitle icon="print" tone="setup" as="h2" size={20} id="printers-h">เครื่องพิมพ์</PageTitle>
         <span className="pill" style={{ background: online ? 'var(--accent-soft)' : 'var(--warn-soft)', color: online ? 'var(--accent-ink)' : 'var(--warn-ink)' }}>
           {online ? 'โปรแกรมพิมพ์ในร้านออนไลน์' : list?.agentLastSeen ? `โปรแกรมพิมพ์ออฟไลน์ (เห็นล่าสุด ${thaiDateTime(list.agentLastSeen)})` : 'ยังไม่ได้ติดตั้งโปรแกรมพิมพ์'}
         </span>

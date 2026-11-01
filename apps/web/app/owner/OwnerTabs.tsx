@@ -1,29 +1,47 @@
 import Link from 'next/link';
+import { Icon, type IconName } from '@/lib/icons';
 
 export type OwnerTab = 'profit' | 'menu' | 'options' | 'customers' | 'stock' | 'expenses' | 'reports' | 'staff' | 'audit' | 'settings';
+export type Tone = 'setup' | 'menu' | 'sell' | 'money' | 'system';
 
-const TABS: Array<[OwnerTab, string, string]> = [
-  ['profit', '/owner/profit', 'กำไร–ต้นทุน'],
-  ['menu', '/owner/menu', 'เมนูและสูตร'],
-  ['options', '/owner/options', 'ตัวเลือกเมนู'],
-  ['stock', '/owner/stock', 'สต็อกวัตถุดิบ'],
-  ['customers', '/owner/customers', 'ลูกค้า'],
-  ['expenses', '/owner/expenses', 'ค่าใช้จ่าย'],
-  ['reports', '/owner/reports', 'รายงานภาษี'],
-  ['staff', '/owner/staff', 'พนักงานและเครื่อง'],
-  ['audit', '/owner/audit', 'ประวัติการใช้งาน'],
-  ['settings', '/owner/settings', 'ตั้งค่าร้านและภาษี'],
+/** Back-office pages in the order a shop sets up and runs: set up → build the menu → customers → money → audit. */
+export const OWNER_GROUPS: Array<{ tone: Tone; label: string; tabs: Array<[OwnerTab, string, string, IconName]> }> = [
+  { tone: 'setup', label: 'ตั้งต้นร้าน', tabs: [
+    ['settings', '/owner/settings', 'ตั้งค่าร้านและภาษี', 'settings'],
+    ['staff', '/owner/staff', 'พนักงานและเครื่อง', 'users'],
+  ] },
+  { tone: 'menu', label: 'ทำเมนู', tabs: [
+    ['stock', '/owner/stock', 'วัตถุดิบ', 'box'],
+    ['options', '/owner/options', 'ตัวเลือกเมนู', 'sliders'],
+    ['menu', '/owner/menu', 'เมนูและสูตร', 'book'],
+  ] },
+  { tone: 'sell', label: 'ลูกค้า', tabs: [
+    ['customers', '/owner/customers', 'ลูกค้าประจำ', 'user'],
+  ] },
+  { tone: 'money', label: 'เงินและภาษี', tabs: [
+    ['expenses', '/owner/expenses', 'ค่าใช้จ่าย', 'coins'],
+    ['profit', '/owner/profit', 'กำไร–ต้นทุน', 'chart'],
+    ['reports', '/owner/reports', 'รายงานภาษี', 'percent'],
+  ] },
+  { tone: 'system', label: 'ตรวจสอบ', tabs: [
+    ['audit', '/owner/audit', 'ประวัติการใช้งาน', 'history'],
+  ] },
 ];
 
 export function OwnerTabs({ active }: { active: OwnerTab }) {
-  const tab = (on: boolean): React.CSSProperties => ({
-    height: 48, display: 'flex', alignItems: 'center', padding: '0 18px', borderRadius: 24, fontSize: 16, fontWeight: 600, whiteSpace: 'nowrap',
-    border: `1px solid ${on ? 'var(--accent)' : 'var(--line-2)'}`, background: on ? 'var(--accent)' : '#fff', color: on ? '#fff' : 'var(--ink)',
-  });
   return (
-    <nav className="row no-print" aria-label="หลังบ้าน" style={{ flexWrap: 'wrap', gap: 8 }}>
-      {TABS.map(([key, href, label]) => (
-        <Link key={key} href={href} style={tab(active === key)} aria-current={active === key ? 'page' : undefined}>{label}</Link>
+    <nav className="onav no-print" aria-label="หลังบ้าน">
+      {OWNER_GROUPS.map((g, gi) => (
+        <div key={g.tone} className={`onav-group tone-${g.tone}`}>
+          <div className="onav-cap"><span className="onav-step" aria-hidden="true">{gi + 1}</span>{g.label}</div>
+          <div className="onav-items">
+            {g.tabs.map(([key, href, label, icon]) => (
+              <Link key={key} href={href} className="onav-tab" aria-current={active === key ? 'page' : undefined}>
+                <Icon name={icon} size={18} />{label}
+              </Link>
+            ))}
+          </div>
+        </div>
       ))}
     </nav>
   );

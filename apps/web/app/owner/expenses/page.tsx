@@ -3,7 +3,7 @@
 import { applyRate, formatBaht } from '@prakai/core';
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
-import { dayLabel, EXPENSE_LABEL, monthLabel, MonthPicker, Sheet, thisMonth, toSatang, today } from '@/lib/owner';
+import { dayLabel, EXPENSE_LABEL, monthLabel, MonthPicker, PageTitle, Sheet, thisMonth, today, toSatang } from '@/lib/owner';
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
@@ -45,7 +45,7 @@ export default function Expenses() {
         )}
         <section className="card" style={{ padding: '12px 18px' }}>
           <div className="row" style={{ paddingBottom: 8 }}>
-            <h1 style={{ margin: 0, fontSize: 20 }}>ค่าใช้จ่าย · {monthLabel(month)}</h1>
+            <PageTitle icon="coins" tone="money" size={20}>ค่าใช้จ่าย · {monthLabel(month)}</PageTitle>
             <span className="muted" style={{ fontSize: 14 }}>ต้นทุนวัตถุดิบมาจากการรับของและขาย ไม่ต้องบันทึกซ้ำที่นี่</span>
             <span className="spacer" />
             <button className="btn btn-primary" onClick={() => setAdding(true)} disabled={!owner} title={owner ? undefined : 'เฉพาะเจ้าของร้าน'}><Icon name="plus" /> บันทึกค่าใช้จ่าย</button>

@@ -3,7 +3,7 @@
 import { formatBaht } from '@prakai/core';
 import { useEffect, useMemo, useState } from 'react';
 import { api, errText } from '@/lib/api';
-import { dayLabel, fmtQty, MonthPicker, Sheet, Stat, thisMonth, toSatang, today, UNIT } from '@/lib/owner';
+import { dayLabel, fmtQty, MonthPicker, PageTitle, Sheet, Stat, thisMonth, today, toSatang, UNIT } from '@/lib/owner';
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
@@ -52,7 +52,7 @@ export default function Stock() {
         )}
         <section className="card" style={{ padding: '12px 18px' }}>
           <div className="row" style={{ paddingBottom: 8, flexWrap: 'wrap' }}>
-            <h1 style={{ margin: 0, fontSize: 20 }}>วัตถุดิบ</h1>
+            <PageTitle icon="box" tone="menu" size={20}>วัตถุดิบ</PageTitle>
             <span className="muted" style={{ fontSize: 14 }}>ยอดคงเหลือคำนวณจากสมุดสต็อก แก้ตรงไม่ได้ ต้องรับของ บันทึกของเสีย หรือนับสต็อก</span>
             <span className="spacer" />
             <button className="btn btn-primary" onClick={() => setPanel('purchase')}><Icon name="box" /> รับของ</button>
@@ -98,7 +98,7 @@ export default function Stock() {
 
         <section className="card" style={{ padding: '12px 18px' }}>
           <div className="row" style={{ paddingBottom: 8 }}>
-            <h2 style={{ margin: 0, fontSize: 20 }}>การรับของและรายงานภาษีซื้อ</h2>
+            <PageTitle icon="receipt" tone="menu" as="h2" size={20}>การรับของและรายงานภาษีซื้อ</PageTitle>
             <span className="spacer" />
             <MonthPicker value={month} onChange={setMonth} />
           </div>

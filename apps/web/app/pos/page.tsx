@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
 import { Icon } from '@/lib/icons';
-import { Sheet } from '@/lib/owner';
+import { PageTitle, Sheet } from '@/lib/owner';
 import { TablesSection } from '../owner/settings/TablesSection';
 import { QrInbox } from './QrInbox';
 import { terminalFor, useMe } from '@/lib/useMe';
@@ -63,7 +63,7 @@ export default function Tables() {
       <TopBar me={me} active="tables" />
       <main style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div className="row">
-          <h1 style={{ margin: 0, fontSize: 26 }}>ผังโต๊ะ</h1>
+          <PageTitle icon="table" tone="sell" size={26}>ผังโต๊ะ</PageTitle>
           <span className="muted">ว่าง {(tables?.length ?? 0) - busy} · มีลูกค้า {busy}</span>
           <span className="spacer" />
           {canManage && <button className="btn" onClick={() => setManaging(true)}><Icon name="edit" /> จัดการโต๊ะ</button>}

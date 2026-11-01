@@ -7,6 +7,7 @@ import { useConfirm } from '@/lib/dialog';
 import { Icon } from '@/lib/icons';
 import { terminalFor, useMe } from '@/lib/useMe';
 import { TopBar } from '../TopBar';
+import { PageTitle } from '@/lib/owner';
 
 const METHOD: Record<string, string> = { cash: 'เงินสด', promptpay: 'พร้อมเพย์', card: 'บัตร', transfer: 'โอน' };
 const input: React.CSSProperties = { width: '100%', height: 52, padding: '0 14px', borderRadius: 12, border: '1px solid var(--line-2)', fontSize: 20 };
@@ -55,7 +56,7 @@ export default function ShiftPage() {
       <main style={{ padding: '20px 24px', display: 'grid', gap: 16, gridTemplateColumns: 'minmax(0, 1fr) minmax(300px, 400px)', alignItems: 'start' }} className="shift-grid">
         <section className="card" style={{ padding: '16px 20px', display: 'grid', gap: 12 }}>
           <div className="row">
-            <h1 style={{ margin: 0, fontSize: 24 }}>{closed ? 'สรุปปิดกะ (Z)' : 'กะปัจจุบัน (X)'}</h1>
+            <PageTitle icon="clock" tone="sell" size={24}>{closed ? 'สรุปปิดกะ (Z)' : 'กะปัจจุบัน (X)'}</PageTitle>
             <span className="muted">{terminal ? `เครื่อง ${terminal.name} (${terminal.code})` : ''}</span>
             <span className="spacer" />
             {report && <button className="btn no-print" onClick={() => window.print()}><Icon name="print" /> พิมพ์</button>}

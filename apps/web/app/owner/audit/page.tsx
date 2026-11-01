@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
-import { today } from '@/lib/owner';
+import { PageTitle, today } from '@/lib/owner';
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
@@ -89,7 +89,7 @@ export default function Audit() {
         <OwnerTabs active="audit" />
         {me && me.role !== 'owner' && me.role !== 'manager' && <div className="error">เฉพาะเจ้าของและผู้จัดการดูประวัติการใช้งานได้</div>}
         <div className="row" style={{ flexWrap: 'wrap' }}>
-          <h1 style={{ margin: 0, fontSize: 24 }}>ประวัติการใช้งาน</h1>
+          <PageTitle icon="history" tone="system" size={24}>ประวัติการใช้งาน</PageTitle>
           <span className="muted">ใครทำอะไรเมื่อไหร่ แก้หรือลบย้อนหลังไม่ได้</span>
           <span className="spacer" />
           {me?.role === 'owner' && <button className="btn" onClick={check} disabled={busy}>{busy ? 'กำลังตรวจ…' : 'ตรวจความสมบูรณ์ของบันทึก'}</button>}

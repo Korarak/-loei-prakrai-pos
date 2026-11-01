@@ -4,6 +4,7 @@ import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
 import { Icon } from '@/lib/icons';
+import { PageTitle } from '@/lib/owner';
 
 interface Status { enabled: boolean; recoveryLeft: number; hasPassword: boolean }
 
@@ -54,7 +55,7 @@ export function SecuritySection({ isOwner }: { isOwner: boolean }) {
   return (
     <section className="card" style={{ padding: 18, display: 'grid', gap: 12 }} aria-labelledby="security-h">
       <div className="row" style={{ flexWrap: 'wrap' }}>
-        <h2 id="security-h" style={{ margin: 0, fontSize: 20 }}>ยืนยันตัวตนสองขั้น</h2>
+        <PageTitle icon="shield" tone="setup" as="h2" size={20} id="security-h">ยืนยันตัวตนสองขั้น</PageTitle>
         <span className="pill" style={{ background: st.enabled ? 'var(--accent-soft)' : 'var(--warn-soft)', color: st.enabled ? 'var(--accent-ink)' : 'var(--warn-ink)' }}>
           {st.enabled ? `เปิดใช้อยู่ · รหัสกู้คืนเหลือ ${st.recoveryLeft}` : 'ยังไม่เปิดใช้'}
         </span>

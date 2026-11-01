@@ -3,7 +3,7 @@
 import { formatBaht } from '@prakai/core';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { EXPENSE_LABEL, fmtQty, monthLabel, MonthPicker, Stat, thisMonth, UNIT } from '@/lib/owner';
+import { EXPENSE_LABEL, fmtQty, monthLabel, MonthPicker, PageTitle, Stat, thisMonth, UNIT } from '@/lib/owner';
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
@@ -61,7 +61,7 @@ export default function Profit() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 16, alignItems: 'start' }}>
           {pnl !== false && (
             <section className="card" style={{ padding: '12px 18px' }}>
-              <h1 style={{ margin: '0 0 8px', fontSize: 20 }}>กำไรขาดทุน · {monthLabel(month)}</h1>
+              <PageTitle icon="chart" tone="money" size={20}>กำไรขาดทุน · {monthLabel(month)}</PageTitle>
               {!pnl ? <p className="muted">กำลังโหลด…</p> : (
                 <table className="tbl">
                   <tbody>
@@ -85,7 +85,7 @@ export default function Profit() {
           )}
 
           <section className="card" style={{ padding: '12px 18px' }}>
-            <h2 style={{ margin: '0 0 8px', fontSize: 20 }}>Menu engineering</h2>
+            <PageTitle icon="chart" tone="money" as="h2" size={20}>Menu engineering</PageTitle>
             {menu?.items.length ? (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {(['puzzle', 'star', 'dog', 'plowhorse'] as const).map((k) => {
@@ -106,7 +106,7 @@ export default function Profit() {
         </div>
 
         <section className="card" style={{ padding: '12px 18px' }}>
-          <h2 style={{ margin: '0 0 8px', fontSize: 20 }}>กำไรต่อเมนู</h2>
+          <PageTitle icon="tag" tone="money" as="h2" size={20}>กำไรต่อเมนู</PageTitle>
           <div className="tbl-wrap">
             <table className="tbl">
               <thead><tr>
@@ -140,7 +140,7 @@ export default function Profit() {
 
         <section className="card" style={{ padding: '12px 18px' }}>
           <div className="row" style={{ paddingBottom: 8 }}>
-            <h2 style={{ margin: 0, fontSize: 20 }}>ต้นทุนตามสูตร vs นับจริง</h2>
+            <PageTitle icon="calc" tone="money" as="h2" size={20}>ต้นทุนตามสูตร vs นับจริง</PageTitle>
             {variance && <span className="pill" style={{ background: Math.abs(variance.totals.variancePct) > 5 ? 'var(--warn-soft)' : 'var(--accent-soft)', color: Math.abs(variance.totals.variancePct) > 5 ? 'var(--warn-ink)' : 'var(--accent-ink)' }}>
               ส่วนต่าง {variance.totals.variancePct}% {Math.abs(variance.totals.variancePct) > 5 ? '(เกินเกณฑ์ 5%)' : '(ผ่านเกณฑ์ 5%)'}
             </span>}

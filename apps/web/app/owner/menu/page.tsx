@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api, errText } from '@/lib/api';
 import { useConfirm } from '@/lib/dialog';
 import { Icon } from '@/lib/icons';
-import { Stat } from '@/lib/owner';
+import { PageTitle, Stat } from '@/lib/owner';
 import { BowlIcon, tintFor } from '@/lib/ui';
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
@@ -124,7 +124,7 @@ export default function MenuPage() {
         {err && <div className="error" role="alert">{err}</div>}
 
         <div className="row" style={{ flexWrap: 'wrap', gap: 10 }}>
-          <h1 style={{ margin: 0, fontSize: 22 }}>เมนู</h1>
+          <PageTitle icon="book" tone="menu" size={22}>เมนู</PageTitle>
           <div className="row" role="group" aria-label="มุมมอง" style={{ gap: 6 }}>
             <button className="btn" aria-pressed={mode === 'layout'} onClick={() => setMode('layout')}><Icon name="table" /> จัดลำดับเมนู</button>
             <button className="btn" aria-pressed={mode === 'cost'} onClick={() => setMode('cost')}><Icon name="receipt" /> ต้นทุน</button>

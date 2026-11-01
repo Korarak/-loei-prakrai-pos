@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
 import { useConfirm } from '@/lib/dialog';
 import { Icon } from '@/lib/icons';
-import { Sheet } from '@/lib/owner';
+import { PageTitle, Sheet } from '@/lib/owner';
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
@@ -57,7 +57,7 @@ export default function Staff() {
 
         <section className="card" style={{ padding: '12px 18px' }}>
           <div className="row" style={{ paddingBottom: 8 }}>
-            <h1 style={{ margin: 0, fontSize: 20 }}>พนักงาน</h1>
+            <PageTitle icon="users" tone="setup" size={20}>พนักงาน</PageTitle>
             <span className="muted" style={{ fontSize: 14 }}>พนักงานเข้าระบบด้วยการแตะชื่อ + PIN 6 หลัก บนเครื่องที่ลงทะเบียนแล้วเท่านั้น · ผิด 5 ครั้งล็อก 5 นาที</span>
             <span className="spacer" />
             <button className="btn btn-primary" disabled={!owner} onClick={() => setPanel({ staff: 'new' })}><Icon name="plus" /> เพิ่มพนักงาน</button>
@@ -83,7 +83,7 @@ export default function Staff() {
 
         <section className="card" style={{ padding: '12px 18px' }}>
           <div className="row" style={{ paddingBottom: 8, flexWrap: 'wrap' }}>
-            <h2 style={{ margin: 0, fontSize: 20 }}>เครื่องที่ลงทะเบียน</h2>
+            <PageTitle icon="device" tone="setup" as="h2" size={20}>เครื่องที่ลงทะเบียน</PageTitle>
             <span className="muted" style={{ fontSize: 14 }}>
               {me?.device ? <>เครื่องนี้คือ <b>{me.device.name}</b></> : 'เครื่องนี้ยังไม่ได้ลงทะเบียน พนักงานจะใช้ PIN บนเครื่องนี้ไม่ได้'}
             </span>
@@ -112,7 +112,7 @@ export default function Staff() {
 
         <section className="card" style={{ padding: '12px 18px' }}>
           <div className="row" style={{ paddingBottom: 8 }}>
-            <h2 style={{ margin: 0, fontSize: 20 }}>เครื่องขาย (เลขชุดเอกสาร)</h2>
+            <PageTitle icon="receipt" tone="setup" as="h2" size={20}>เครื่องขาย (เลขชุดเอกสาร)</PageTitle>
             <span className="muted" style={{ fontSize: 14 }}>แต่ละเครื่องมีเลขใบกำกับภาษีอย่างย่อของตัวเอง และต้องขอ POS ID จากสรรพากรแยกกัน</span>
             <span className="spacer" />
             <button className="btn" disabled={!owner} onClick={() => setPanel('terminal')}><Icon name="plus" /> เพิ่มเครื่องขาย</button>

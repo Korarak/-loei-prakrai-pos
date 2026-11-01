@@ -19,6 +19,8 @@
   --danger-soft: #fdecea;
   --info-ink: #2c4686;
   --info-soft: #eef1f8;
+  --violet-soft: #f1ecfa;
+  --violet-ink: #54389a;
   --radius: 14px;
 }
 
@@ -156,3 +158,26 @@ button, a, input, select { touch-action: manipulation; }
 .dlg-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 12px; }
 .dlg-actions .btn { min-height: 54px; }
 @media (prefers-reduced-motion: reduce) { .dlg { animation: none; } }
+
+/* Back-office navigation: numbered groups in working order */
+.onav { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: stretch; }
+.onav-group { display: grid; gap: 6px; padding: 8px 10px 10px; border-radius: 16px; background: var(--g-soft); border: 1px solid var(--line); }
+.onav-cap { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--g-ink); }
+.onav-step { width: 22px; height: 22px; border-radius: 50%; background: var(--g-ink); color: #fff; display: grid; place-items: center; font-size: 12px; }
+.onav-items { display: flex; flex-wrap: wrap; gap: 6px; }
+.onav-tab { height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; border-radius: 22px; font-size: 15px; font-weight: 600; white-space: nowrap; background: #fff; color: var(--ink); border: 1px solid var(--line-2); }
+.onav-tab:hover { border-color: var(--g-ink); }
+.onav-tab[aria-current='page'] { background: var(--g-ink); border-color: var(--g-ink); color: #fff; }
+.onav-tab svg { color: var(--g-ink); }
+.onav-tab[aria-current='page'] svg { color: #fff; }
+
+.ptitle { display: flex; align-items: center; gap: 12px; }
+.ptitle-ico { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--g-soft, var(--accent-soft)); color: var(--g-ink, var(--accent-ink)); flex: none; }
+.ptitle-ico.sm { width: 36px; height: 36px; border-radius: 10px; }
+.ptitle h1, .ptitle h2 { margin: 0; }
+.ptitle small { display: block; color: var(--muted); font-size: 14px; font-weight: 500; margin-top: 2px; }
+.tone-setup { --g-soft: var(--info-soft); --g-ink: var(--info-ink); }
+.tone-menu { --g-soft: var(--accent-soft); --g-ink: var(--accent-ink); }
+.tone-sell { --g-soft: var(--warn-soft); --g-ink: var(--warn-ink); }
+.tone-money { --g-soft: var(--violet-soft); --g-ink: var(--violet-ink); }
+.tone-system { --g-soft: var(--line-soft); --g-ink: var(--muted-2); }

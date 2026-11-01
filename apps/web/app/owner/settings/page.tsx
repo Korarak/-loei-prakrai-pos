@@ -12,6 +12,7 @@ import { SecuritySection } from './SecuritySection';
 import { QrSection } from './QrSection';
 import { TablesSection } from './TablesSection';
 import { Icon } from '@/lib/icons';
+import { PageTitle } from '@/lib/owner';
 
 export default function Settings() {
   const { me, reload } = useMe();
@@ -69,6 +70,7 @@ export default function Settings() {
         {!owner && <div className="error">เฉพาะเจ้าของร้านแก้ค่าภาษีได้</div>}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 16 }}>
           <section className="card" style={{ padding: 18, display: 'grid', gap: 12, alignContent: 'start' }}>
+            <PageTitle icon="store" tone="setup" size={22} sub="โลโก้ ชื่อร้าน VAT ค่าบริการ และการปัดเศษเงินสด">ข้อมูลร้านและภาษี</PageTitle>
             <div className="row" style={{ gap: 14, alignItems: 'flex-start' }}>
               <div style={{ width: 96, height: 96, borderRadius: 12, border: '1px solid var(--line)', display: 'grid', placeItems: 'center', overflow: 'hidden', background: '#fff', flex: 'none' }}>
                 {me.tenant.logo_url ? <img src={me.tenant.logo_url} alt="โลโก้ร้าน" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <span className="muted" style={{ fontSize: 13 }}>ยังไม่มีโลโก้</span>}
@@ -167,7 +169,7 @@ export default function Settings() {
         <SecuritySection isOwner={me.role === 'owner'} />
         <section className="card" style={{ padding: 18, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 280 }}>
-            <h2 style={{ margin: 0, fontSize: 20 }}>สำรองข้อมูล</h2>
+            <PageTitle icon="backup" tone="setup" as="h2" size={20}>สำรองข้อมูล</PageTitle>
             <div className="muted" style={{ fontSize: 14 }}>ดาวน์โหลดข้อมูลทั้งหมดของร้าน (เมนู บิล เอกสารภาษี สต็อก ค่าใช้จ่าย audit log) เป็นไฟล์ JSON เก็บไว้เองได้ตลอด ระบบสำรองรายคืนบนเซิร์ฟเวอร์แยกต่างหาก</div>
           </div>
           {/* A plain link: the browser downloads with the session cookie, no JS needed. */}

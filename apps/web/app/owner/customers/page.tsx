@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
-import { Sheet } from '@/lib/owner';
+import { PageTitle, Sheet } from '@/lib/owner';
 import { useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
@@ -29,7 +29,7 @@ export default function CustomersPage() {
         {err && <div className="error" role="alert">{err}</div>}
         <section className="card" style={{ padding: '12px 18px', display: 'grid', gap: 12 }}>
           <div className="row">
-            <h1 style={{ margin: 0, fontSize: 20 }}>ลูกค้าประจำ</h1>
+            <PageTitle icon="user" tone="sell" size={20}>ลูกค้าประจำ</PageTitle>
             <span className="muted" style={{ fontSize: 14 }}>เก็บข้อมูลผู้ซื้อไว้ออกใบกำกับภาษีเต็มรูปซ้ำ ๆ — เลือกจากหน้าชำระเงินได้เลย</span>
             <span className="spacer" />
             <input aria-label="ค้นหาลูกค้า" placeholder="ค้นหาชื่อ / เลขผู้เสียภาษี / เบอร์" value={q} onChange={(e) => setQ(e.target.value)}

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
 import { useConfirm } from '@/lib/dialog';
 import { Icon } from '@/lib/icons';
+import { PageTitle } from '@/lib/owner';
 
 interface Links { enabled: boolean; tables: { id: string; name: string; path: string }[] }
 
@@ -39,7 +40,7 @@ export function QrSection({ canEdit, isOwner }: { canEdit: boolean; isOwner: boo
   return (
     <section className="card" style={{ padding: 18, display: 'grid', gap: 14 }} aria-labelledby="qr-h">
       <div className="row no-print" style={{ flexWrap: 'wrap' }}>
-        <h2 id="qr-h" style={{ margin: 0, fontSize: 20 }}>QR สั่งอาหารที่โต๊ะ</h2>
+        <PageTitle icon="qr" tone="setup" as="h2" size={20} id="qr-h">QR สั่งอาหารที่โต๊ะ</PageTitle>
         <span className="spacer" />
         {links && <button className="btn" aria-pressed={links.enabled} onClick={() => toggle(!links.enabled)}>{links.enabled ? 'เปิดรับออเดอร์อยู่' : 'ปิดอยู่'}</button>}
         <button className="btn btn-primary" onClick={() => window.print()} disabled={!links?.tables.length}><Icon name="print" /> พิมพ์ QR ทุกโต๊ะ</button>
