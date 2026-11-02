@@ -51,12 +51,14 @@ describe('moving, merging and splitting bills', () => {
     expect(tables[1].order_id).toBe(a);
   });
 
-  it('clears a stuck table without payment; sent food needs a manager reason', async () => {
+  it('clears a stuck table without payment, even after the food was sent', async () => {
     const s = await newShop(app);
     const a = await table5Order(s, 0);
     await s.call('POST', `/api/orders/${a}/send`);
-    expect((await s.call('POST', `/api/orders/${a}/clear`, {})).body.error).toBe('reason_required');
-    expect((await s.call('POST', `/api/orders/${a}/clear`, { reason: 'ลูกค้ากลับก่อน' })).status).toBe(200);
+    const lines = (await s.call('GET', `/api/orders/${a}`)).body.lines;
+    const child = (await s.call('POST', `/api/orders/${a}/split`, { lines: [{ lineId: lines[0].id, qty: 1 }] })).body.id;
+    expect((await s.call('POST', `/api/orders/${a}/clear`, {})).body.bills).toBe(2);
+    expect((await s.call('GET', `/api/orders/${child}`)).body.order.status).toBe('void');
     expect((await s.call('GET', '/api/tables')).body[0].order_id).toBeNull();
     expect((await s.call('GET', `/api/orders/${a}`)).body.order.status).toBe('void');
     expect((await s.call('POST', `/api/orders/${a}/clear`, {})).body.error).toBe('order_closed');

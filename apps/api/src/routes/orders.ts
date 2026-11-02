@@ -307,17 +307,15 @@ export async function orderRoutes(app: FastifyInstance, ctx: Ctx) {
       requireOpen(order);
       const live = lines.filter((l) => l.status !== 'void');
       const sent = live.filter((l) => l.status === 'sent');
-      if (sent.length > 0) {
-        if (!atLeast('manager').includes(req.session.role)) throw new HttpError(403, 'manager_required');
-        if (!parsed.reason || parsed.reason.length < 3) throw new HttpError(400, 'reason_required');
-      }
       const reason = parsed.reason || 'เคลียร์โต๊ะ';
-      await c.query(`UPDATE order_lines SET status = 'void', void_reason = $2 WHERE order_id = $1 AND status <> 'void'`, [id, reason]);
-      await c.query(`UPDATE orders SET status = 'void', closed_at = now() WHERE id = $1`, [id]);
+      // the bill plus any open split bills of it: everything at the table goes
+      const ids = [id, ...(await many(c, `SELECT id FROM orders WHERE split_from = $1 AND status = 'open' FOR UPDATE`, [id])).map((r) => r.id)];
+      await c.query(`UPDATE order_lines SET status = 'void', void_reason = $2 WHERE order_id = ANY($1::uuid[]) AND status <> 'void'`, [ids, reason]);
+      await c.query(`UPDATE orders SET status = 'void', closed_at = now() WHERE id = ANY($1::uuid[])`, [ids]);
       await audit(c, req.session.userId, 'order.clear', 'order', id, {
-        billNo: order.bill_no, tableId: order.table_id, lines: live.length, sentLines: sent.length, reason,
+        billNo: order.bill_no, tableId: order.table_id, lines: live.length, sentLines: sent.length, bills: ids.length, reason,
       });
-      return { ok: true };
+      return { ok: true, bills: ids.length };
     });
   });
 

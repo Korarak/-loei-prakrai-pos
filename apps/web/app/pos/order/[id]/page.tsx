@@ -212,11 +212,9 @@ export default function OrderPage() {
                   onSubmit={(e) => { e.preventDefault(); run(async () => { await api('POST', `/api/orders/${id}/clear`, { reason: clearReason || undefined }); router.push('/pos'); }); }}>
                   <b>เคลียร์โต๊ะนี้โดยไม่คิดเงิน?</b>
                   <span className="muted" style={{ fontSize: 13 }}>
-                    บิลจะถูกยกเลิกและโต๊ะกลับเป็นว่าง ไม่ออกใบเสร็จ ไม่นับเป็นยอดขาย
-                    {hasSent ? ' · มีรายการส่งครัวแล้ว ต้องเป็นผู้จัดการและระบุเหตุผล' : ''}
+                    ยกเลิกทุกรายการและบิลแยกของโต๊ะนี้ แล้วโต๊ะกลับเป็นว่าง ไม่ออกใบเสร็จ ไม่นับเป็นยอดขาย
                   </span>
-                  <input value={clearReason} onChange={(e) => setClearReason(e.target.value)} placeholder={hasSent ? 'เหตุผล (จำเป็น)' : 'เหตุผล (ไม่บังคับ)'}
-                    required={hasSent} minLength={hasSent ? 3 : undefined} autoFocus
+                  <input value={clearReason} onChange={(e) => setClearReason(e.target.value)} placeholder="เหตุผล (ไม่บังคับ)" autoFocus
                     style={{ height: 44, padding: '0 10px', borderRadius: 10, border: '1px solid var(--line-2)' }} />
                   <div className="row" style={{ gap: 8 }}>
                     <button className="btn btn-danger" style={{ flex: 1 }}><Icon name="ban" /> ยืนยันเคลียร์โต๊ะ</button>
