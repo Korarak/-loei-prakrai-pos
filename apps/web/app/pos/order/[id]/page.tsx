@@ -39,6 +39,8 @@ export default function OrderPage() {
   const [voiding, setVoiding] = useState<string | null>(null);
   const [reason, setReason] = useState('');
   const [batch, setBatch] = useState<string | null>(null);
+  const [clearing, setClearing] = useState(false);
+  const [clearReason, setClearReason] = useState('');
 
   const load = useCallback(() => api<OrderView>('GET', `/api/orders/${id}`).then(setView).catch((e) => setErr(errText(e))), [id]);
   useEffect(() => { load(); api('GET', '/api/menu').then(setMenu); }, [load]);
@@ -200,6 +202,30 @@ export default function OrderPage() {
             </div>
           )}
 
+          {view && (
+            <div style={{ padding: '6px 20px 0' }}>
+              {!clearing ? (
+                <button className="btn" style={{ width: '100%', minHeight: 40, fontSize: 14 }}
+                  onClick={() => { setClearing(true); setClearReason(''); }}><Icon name="ban" /> เคลียร์โต๊ะ (ไม่คิดเงิน)</button>
+              ) : (
+                <form className="card" style={{ padding: 12, display: 'grid', gap: 8 }}
+                  onSubmit={(e) => { e.preventDefault(); run(async () => { await api('POST', `/api/orders/${id}/clear`, { reason: clearReason || undefined }); router.push('/pos'); }); }}>
+                  <b>เคลียร์โต๊ะนี้โดยไม่คิดเงิน?</b>
+                  <span className="muted" style={{ fontSize: 13 }}>
+                    บิลจะถูกยกเลิกและโต๊ะกลับเป็นว่าง ไม่ออกใบเสร็จ ไม่นับเป็นยอดขาย
+                    {hasSent ? ' · มีรายการส่งครัวแล้ว ต้องเป็นผู้จัดการและระบุเหตุผล' : ''}
+                  </span>
+                  <input value={clearReason} onChange={(e) => setClearReason(e.target.value)} placeholder={hasSent ? 'เหตุผล (จำเป็น)' : 'เหตุผล (ไม่บังคับ)'}
+                    required={hasSent} minLength={hasSent ? 3 : undefined} autoFocus
+                    style={{ height: 44, padding: '0 10px', borderRadius: 10, border: '1px solid var(--line-2)' }} />
+                  <div className="row" style={{ gap: 8 }}>
+                    <button className="btn btn-danger" style={{ flex: 1 }}><Icon name="ban" /> ยืนยันเคลียร์โต๊ะ</button>
+                    <button type="button" className="btn" onClick={() => setClearing(false)}><Icon name="close" /> ไม่เคลียร์</button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
           {err && <div className="error" role="alert" style={{ margin: '8px 20px 0' }}>{err}</div>}
           {(batch || hasSent) && (
             <div className="row" style={{ padding: '10px 20px 0', gap: 8 }}>

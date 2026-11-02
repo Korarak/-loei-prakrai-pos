@@ -297,6 +297,30 @@ export async function orderRoutes(app: FastifyInstance, ctx: Ctx) {
     });
   });
 
+  // เคลียร์โต๊ะ: close a stuck open bill without taking payment. No tax document, no payment row; kept as a void bill.
+  // Anything already sent to the kitchen needs a manager and a reason (food was made).
+  app.post('/api/orders/:id/clear', { preHandler: ctx.auth(atLeast('waiter')) }, async (req) => {
+    const { id } = Id.parse(req.params);
+    const parsed = z.object({ reason: z.string().trim().max(300).optional() }).parse(req.body ?? {});
+    return tx(req.session, async (c) => {
+      const { order, lines } = await loadOrder(c, id, true);
+      requireOpen(order);
+      const live = lines.filter((l) => l.status !== 'void');
+      const sent = live.filter((l) => l.status === 'sent');
+      if (sent.length > 0) {
+        if (!atLeast('manager').includes(req.session.role)) throw new HttpError(403, 'manager_required');
+        if (!parsed.reason || parsed.reason.length < 3) throw new HttpError(400, 'reason_required');
+      }
+      const reason = parsed.reason || 'เคลียร์โต๊ะ';
+      await c.query(`UPDATE order_lines SET status = 'void', void_reason = $2 WHERE order_id = $1 AND status <> 'void'`, [id, reason]);
+      await c.query(`UPDATE orders SET status = 'void', closed_at = now() WHERE id = $1`, [id]);
+      await audit(c, req.session.userId, 'order.clear', 'order', id, {
+        billNo: order.bill_no, tableId: order.table_id, lines: live.length, sentLines: sent.length, reason,
+      });
+      return { ok: true };
+    });
+  });
+
   // แยกบิล: chosen lines (or part of a line's quantity) move to a new bill that is paid on its own.
   app.post('/api/orders/:id/split', { preHandler: ctx.auth(atLeast('waiter')) }, async (req, reply) => {
     const { id } = Id.parse(req.params);
