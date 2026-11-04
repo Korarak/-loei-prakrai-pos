@@ -9,7 +9,7 @@ import { Icon } from '@/lib/icons';
 import { PageTitle, Sheet } from '@/lib/owner';
 import { TablesSection } from '../owner/settings/TablesSection';
 import { QrInbox } from './QrInbox';
-import { terminalFor, useMe } from '@/lib/useMe';
+import { isSimple, terminalFor, useMe } from '@/lib/useMe';
 import { TopBar } from './TopBar';
 
 interface TableRow { id: string; name: string; seats: number; order_id: string | null; guests: number | null; opened_at: string | null; amount: number; splits: number }
@@ -26,7 +26,8 @@ export default function Tables() {
   const [noShift, setNoShift] = useState(false);
   const [managing, setManaging] = useState(false);
   const canManage = !!me && (me.role === 'owner' || me.role === 'manager');
-  const canCash = !!me && ['owner', 'manager', 'cashier'].includes(me.role);
+  // Simple shops never see shifts: the till opens its own drawer on the first payment.
+  const canCash = !!me && ['owner', 'manager', 'cashier'].includes(me.role) && !isSimple(me);
 
   useEffect(() => {
     if (!me || !canCash) return;

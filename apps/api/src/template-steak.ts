@@ -216,7 +216,7 @@ export const STEAK_OPTIONS: Array<{ name: string; min: number; max: number; item
 ];
 
 /** Menu, ingredients (market-rate average costs, stock zero), sub-recipes, recipes and menu options. */
-export async function seedSteak(c: Tx) {
+export async function seedSteak(c: Tx, opts: { menuOnly?: boolean } = {}) {
   let catSort = 0;
   const items = new Map<string, string>();
   for (const [cat, list] of STEAK_MENU) {
@@ -229,6 +229,7 @@ export async function seedSteak(c: Tx) {
       items.set(name, it.rows[0].id);
     }
   }
+  if (opts.menuOnly) return;
 
   const ings = new Map<string, string>();
   for (const [name, kind, unit, pUnit, factor, price, yieldPct, reorder] of STEAK_INGREDIENTS) {

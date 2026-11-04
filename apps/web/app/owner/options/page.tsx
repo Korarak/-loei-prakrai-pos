@@ -4,7 +4,7 @@ import { formatBaht } from '@prakai/core';
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
 import { PageTitle, Sheet, toSatang, UNIT } from '@/lib/owner';
-import { useMe } from '@/lib/useMe';
+import { useFullOnly, useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
 import { Icon } from '@/lib/icons';
@@ -25,6 +25,7 @@ const toDraft = (g: any): Draft => ({
 
 export default function OptionsPage() {
   const { me } = useMe();
+  const hidden = useFullOnly(me);
   const [groups, setGroups] = useState<any[] | null>(null);
   const [items, setItems] = useState<any[]>([]);
   const [ings, setIngs] = useState<any[]>([]);
@@ -40,6 +41,7 @@ export default function OptionsPage() {
 
   const itemName = (id: string) => items.find((i) => i.id === id)?.name ?? '—';
 
+  if (hidden) return null;
   return (
     <>
       <TopBar me={me} active="owner" />

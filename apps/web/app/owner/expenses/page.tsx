@@ -4,7 +4,7 @@ import { applyRate, formatBaht } from '@prakai/core';
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
 import { dayLabel, EXPENSE_LABEL, monthLabel, MonthPicker, PageTitle, Sheet, thisMonth, today, toSatang } from '@/lib/owner';
-import { useMe } from '@/lib/useMe';
+import { useFullOnly, useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
 import { Icon } from '@/lib/icons';
@@ -14,6 +14,7 @@ const WHT = [[0, 'ไม่หัก'], [100, '1% ค่าขนส่ง'], [2
 
 export default function Expenses() {
   const { me } = useMe();
+  const hidden = useFullOnly(me);
   const [month, setMonth] = useState(thisMonth());
   const [rows, setRows] = useState<any[] | null>(null);
   const [adding, setAdding] = useState(false);
@@ -27,6 +28,7 @@ export default function Expenses() {
   const total = (rows ?? []).reduce((s, r) => s + r.amount, 0);
   const owner = me?.role === 'owner';
 
+  if (hidden) return null;
   return (
     <>
       <TopBar me={me} active="owner" />

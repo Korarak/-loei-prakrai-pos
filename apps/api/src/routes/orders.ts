@@ -67,6 +67,7 @@ export function bangkokDate(d = new Date()): string {
 interface TenantRow {
   name: string; legal_name: string | null; tax_id: string | null; address: string | null;
   vat_registered: boolean; price_includes_vat: boolean; service_charge_bp: number; cash_rounding: CashRounding;
+  ui_mode: 'simple' | 'full';
 }
 
 async function tenantOf(c: Tx, s: Session): Promise<TenantRow> {
@@ -389,7 +390,12 @@ export async function orderRoutes(app: FastifyInstance, ctx: Ctx) {
       if (!term) throw new HttpError(404, 'terminal_not_found');
       const branch = await one(c, `SELECT * FROM branches WHERE id = $1`, [term.branch_id]);
       // Money goes into a drawer someone opened and will count (design doc §5, module 7).
-      const shift = await openShiftOf(c, term.id);
+      let shift = await openShiftOf(c, term.id);
+      // Simple mode hides shifts: the drawer opens by itself (float 0) on the first payment.
+      if (!shift && t.ui_mode === 'simple') {
+        shift = await one(c, `INSERT INTO shifts (terminal_id, opening_float, opened_by) VALUES ($1, 0, $2) RETURNING *`, [term.id, req.session.userId]);
+        await audit(c, req.session.userId, 'shift.open', 'shift', shift.id, { terminalId: term.id, openingFloat: 0, auto: true });
+      }
       if (!shift) throw new HttpError(409, 'shift_required', 'open a shift on this till before taking payment');
 
       // Which document may this shop issue? (design doc §2.3)

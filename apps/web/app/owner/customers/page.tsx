@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
 import { PageTitle, Sheet } from '@/lib/owner';
-import { useMe } from '@/lib/useMe';
+import { useFullOnly, useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
 import { Icon } from '@/lib/icons';
@@ -13,6 +13,7 @@ const blank: Draft = { name: '', taxId: '', branch: '00000', address: '', phone:
 
 export default function CustomersPage() {
   const { me } = useMe();
+  const hidden = useFullOnly(me);
   const [rows, setRows] = useState<any[] | null>(null);
   const [q, setQ] = useState('');
   const [edit, setEdit] = useState<Draft | null>(null);
@@ -21,6 +22,7 @@ export default function CustomersPage() {
   const load = () => api('GET', `/api/customers?all=1${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ''}`).then(setRows).catch((e) => setErr(errText(e)));
   useEffect(() => { const t = setTimeout(load, 250); return () => clearTimeout(t); }, [q]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  if (hidden) return null;
   return (
     <>
       <TopBar me={me} active="owner" />

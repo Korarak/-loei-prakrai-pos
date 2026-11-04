@@ -4,7 +4,7 @@ import { isValidPromptPayId, isValidThaiTaxId } from '@prakai/core';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { api, errText, uploadLogo } from '@/lib/api';
-import { useMe } from '@/lib/useMe';
+import { isSimple, useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
 import { PrintersSection } from './PrintersSection';
@@ -21,6 +21,7 @@ export default function Settings() {
   const [serials, setSerials] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
+  const [adv, setAdv] = useState(false);
 
   useEffect(() => {
     if (!me) return;
@@ -62,12 +63,45 @@ export default function Settings() {
   }
 
   const owner = me.role === 'owner';
+  const simple = isSimple(me);
+  /** Simple shops see the essentials; "advanced" brings the rest back without leaving simple mode. */
+  const lite = simple && !adv;
+  /** Tax identity matters as soon as the shop is VAT-registered, whatever the mode. */
+  const showTax = !lite || f.vatRegistered;
+
+  async function setMode(uiMode: 'simple' | 'full') {
+    setErr(''); setMsg('');
+    try {
+      await api('PATCH', '/api/settings', { uiMode });
+      await reload();
+      setAdv(false);
+      setMsg(uiMode === 'simple' ? 'เปลี่ยนเป็นโหมดง่ายแล้ว ข้อมูลทั้งหมดยังอยู่ครบ' : 'เปลี่ยนเป็นโหมดเต็มแล้ว');
+    } catch (e) { setErr(errText(e)); }
+  }
   return (
     <>
       <TopBar me={me} active="owner" />
       <main style={{ padding: '20px 24px', display: 'grid', gap: 16 }}>
         <OwnerTabs active="settings" />
         {!owner && <div className="error">เฉพาะเจ้าของร้านแก้ค่าภาษีได้</div>}
+        {owner && (
+          <section className="card" style={{ padding: 18, display: 'grid', gap: 10 }} aria-labelledby="mode-h">
+            <PageTitle icon="sliders" tone="setup" as="h2" size={20} id="mode-h" sub="สลับได้ตลอดเวลา ข้อมูลไม่หาย">รูปแบบการใช้งาน</PageTitle>
+            <div role="radiogroup" aria-labelledby="mode-h" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 10 }}>
+              {([['simple', 'แบบง่าย', 'ขายของ รับเงิน ดูยอดขาย ไม่ต้องทำสต็อกหรือสูตร'],
+                 ['full', 'แบบเต็ม', 'สต็อก สูตรต้นทุน ตัวเลือกเมนู ลูกค้าประจำ ค่าใช้จ่าย กำไร และรายงานภาษีครบ']] as const).map(([v, t, d]) => {
+                const on = (me.tenant.ui_mode ?? 'full') === v;
+                return (
+                  <label key={v} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 14px', cursor: 'pointer', borderRadius: 12,
+                    border: `1.5px solid ${on ? 'var(--accent)' : 'var(--line-2)'}`, background: on ? 'var(--accent-soft)' : 'transparent' }}>
+                    <input type="radio" name="ui-mode" checked={on} onChange={() => setMode(v)} style={{ width: 20, height: 20, marginTop: 2, accentColor: 'var(--accent)' }} />
+                    <span><strong style={{ display: 'block' }}>{t}</strong><span className="muted" style={{ fontSize: 14 }}>{d}</span></span>
+                  </label>
+                );
+              })}
+            </div>
+          </section>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 16 }}>
           <section className="card" style={{ padding: 18, display: 'grid', gap: 12, alignContent: 'start' }}>
             <PageTitle icon="store" tone="setup" size={22} sub="โลโก้ ชื่อร้าน VAT ค่าบริการ และการปัดเศษเงินสด">ข้อมูลร้านและภาษี</PageTitle>
@@ -113,6 +147,7 @@ export default function Settings() {
             {f.vatRegistered && (
               <label className="field">วันที่จดทะเบียน VAT<input type="date" value={f.vatRegisteredAt} onChange={(e) => setF({ ...f, vatRegisteredAt: e.target.value })} /></label>
             )}
+            {showTax && <>
             <label className="field">ชื่อผู้ประกอบการ (พิมพ์บนใบกำกับภาษี)<input value={f.legalName} onChange={(e) => setF({ ...f, legalName: e.target.value })} /></label>
             <label className="field">เลขประจำตัวผู้เสียภาษี 13 หลัก
               <input inputMode="numeric" value={f.taxId} onChange={(e) => setF({ ...f, taxId: e.target.value })} aria-invalid={taxIdBad} style={taxIdBad ? { borderColor: 'var(--warn)' } : undefined} />
@@ -123,26 +158,30 @@ export default function Settings() {
               <input inputMode="numeric" maxLength={5} value={f.branchCode} onChange={(e) => setF({ ...f, branchCode: e.target.value })} aria-invalid={branchBad} style={branchBad ? { borderColor: 'var(--warn)' } : undefined} />
               {branchBad && <span style={{ color: 'var(--warn-ink)' }}>ต้องเป็นตัวเลข 5 หลัก</span>}
             </label>
+            </>}
           </section>
           <section className="card" style={{ padding: 18, display: 'grid', gap: 12, alignContent: 'start' }}>
-            <label className="field">ราคาเมนู
+            {showTax && <label className="field">ราคาเมนู
               <select value={f.priceIncludesVat ? 'incl' : 'excl'} onChange={(e) => setF({ ...f, priceIncludesVat: e.target.value === 'incl' })}>
                 <option value="incl">ราคาเมนูรวม VAT แล้ว</option>
                 <option value="excl">บวก VAT ตอนคิดเงิน</option>
               </select>
-            </label>
+            </label>}
+            {!lite && <>
             <label className="field">Service charge (%)<input inputMode="decimal" value={f.serviceCharge} onChange={(e) => setF({ ...f, serviceCharge: e.target.value })} /></label>
             <label className="field">ปัดเศษเงินสด
               <select value={f.cashRounding} onChange={(e) => setF({ ...f, cashRounding: e.target.value })}>
                 <option value="none">ไม่ปัด</option><option value="down-25">ปัดลงเป็น 25 สตางค์</option><option value="down-baht">ปัดลงเป็นบาท</option>
               </select>
             </label>
+            </>}
             <label className="field">พร้อมเพย์ของร้าน (เบอร์มือถือ 10 หลัก หรือเลขผู้เสียภาษี/บัตรประชาชน 13 หลัก)
               <input inputMode="numeric" placeholder="ว่าง = ไม่แสดง QR" value={f.promptpay} onChange={(e) => setF({ ...f, promptpay: e.target.value })}
                 aria-invalid={ppBad} style={ppBad ? { borderColor: 'var(--warn)' } : undefined} />
               {ppBad ? <span style={{ color: 'var(--warn-ink)' }}>ต้องเป็นตัวเลข 10 หรือ 13 หลัก</span>
                 : <span>หน้าชำระเงินจะสร้าง QR ตามยอดบิล ลูกค้าสแกนแล้วยอดขึ้นเอง</span>}
             </label>
+            {showTax && <>
             <div style={{ fontWeight: 700, paddingTop: 8 }}>เครื่องขายและ POS ID สรรพากร</div>
             {me.terminals.map((t) => (
               <div key={t.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -158,15 +197,23 @@ export default function Settings() {
               ระหว่างรออนุมัติ ออกใบกำกับภาษีเต็มรูปได้ ใบอย่างย่อเปิดใช้เมื่อกรอก POS ID แล้ว
               {owner && <> · <Link href="/owner/pp06" style={{ fontWeight: 700, textDecoration: 'underline' }}>พิมพ์เอกสารประกอบคำขอ ภ.พ.06</Link></>}
             </div>
+            </>}
           </section>
         </div>
         {err && <div className="error" role="alert">{err}</div>}
         {msg && <div style={{ color: 'var(--accent-ink)', fontWeight: 600 }}>{msg}</div>}
         <div><button className="btn btn-primary btn-lg" onClick={save} disabled={!owner || taxIdBad || branchBad || ppBad || !f.name.trim()} style={{ minWidth: 200 }}><Icon name="save" /> บันทึก</button></div>
         <TablesSection canEdit={me.role === 'owner' || me.role === 'manager'} />
-        <QrSection canEdit={me.role === 'owner' || me.role === 'manager'} isOwner={me.role === 'owner'} />
-        <PrintersSection me={me} />
-        <SecuritySection isOwner={me.role === 'owner'} />
+        {!lite && <>
+          <QrSection canEdit={me.role === 'owner' || me.role === 'manager'} isOwner={me.role === 'owner'} />
+          <PrintersSection me={me} />
+          <SecuritySection isOwner={me.role === 'owner'} />
+        </>}
+        {simple && (
+          <div><button className="btn btn-outline" onClick={() => setAdv(!adv)} aria-expanded={adv}>
+            <Icon name="settings" /> {adv ? 'ซ่อนตั้งค่าขั้นสูง' : 'แสดงตั้งค่าขั้นสูง (เครื่องพิมพ์ QR สั่งอาหาร ความปลอดภัย ค่าบริการ)'}
+          </button></div>
+        )}
         <section className="card" style={{ padding: 18, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 280 }}>
             <PageTitle icon="backup" tone="setup" as="h2" size={20}>สำรองข้อมูล</PageTitle>

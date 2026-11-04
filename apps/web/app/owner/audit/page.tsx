@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
 import { PageTitle, today } from '@/lib/owner';
-import { useMe } from '@/lib/useMe';
+import { useFullOnly, useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
 
@@ -41,6 +41,7 @@ interface Entry { id: number; at: string; action: string; entity: string; entity
 
 export default function Audit() {
   const { me } = useMe();
+  const hidden = useFullOnly(me);
   const [rows, setRows] = useState<Entry[]>([]);
   const [more, setMore] = useState(false);
   const [actions, setActions] = useState<string[]>([]);
@@ -82,6 +83,7 @@ export default function Audit() {
   };
   const field: React.CSSProperties = { height: 48, padding: '0 12px', borderRadius: 12, border: '1px solid var(--line-2)', background: '#fff' };
 
+  if (hidden) return null;
   return (
     <>
       <TopBar me={me} active="owner" />

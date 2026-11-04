@@ -19,10 +19,15 @@ function strength(p: string) {
 const LEVELS = ['อ่อนมาก', 'อ่อน', 'พอใช้', 'ดี', 'แข็งแรง'];
 const COLORS = ['#B42318', '#B42318', '#B54708', '#1F7A4D', '#1F7A4D'];
 
+const MODES = [
+  { v: 'simple', title: 'แบบง่าย (แนะนำ)', desc: 'ขายของ รับเงิน ดูยอดขาย ไม่ต้องตั้งสต็อกหรือสูตร เหมาะกับร้านที่อยากเริ่มใช้ทันที' },
+  { v: 'full', title: 'แบบเต็ม', desc: 'มีสต็อก สูตรต้นทุน ตัวเลือกเมนู ลูกค้าประจำ ค่าใช้จ่าย และรายงานกำไร/ภาษีครบ' },
+] as const;
+
 const TEMPLATES = [
-  { v: 'aharn', title: 'อาหารตามสั่ง', desc: 'เมนูตัวอย่างพร้อมสูตรต้นทุน แก้ไขได้ทุกรายการ' },
-  { v: 'steak', title: 'ร้านสเต็ก · ข้าวขาหมู · หมูกรอบ', desc: 'รวมเครื่องดื่มและแอลกอฮอล์ พร้อมสูตรและตัวเลือกเสริม' },
-  { v: 'blank', title: 'เริ่มจากว่าง', desc: 'ตั้งค่าเมนูเองทั้งหมด' },
+  { v: 'aharn', title: 'อาหารตามสั่ง', desc: 'เมนูตัวอย่างพร้อมสูตรต้นทุน แก้ไขได้ทุกรายการ', simpleDesc: 'เมนูตัวอย่าง แก้ไขได้ทุกรายการ' },
+  { v: 'steak', title: 'ร้านสเต็ก · ข้าวขาหมู · หมูกรอบ', desc: 'รวมเครื่องดื่มและแอลกอฮอล์ พร้อมสูตรและตัวเลือกเสริม', simpleDesc: 'รวมเครื่องดื่มและแอลกอฮอล์ แก้ไขได้ทุกรายการ' },
+  { v: 'blank', title: 'เริ่มจากว่าง', desc: 'ตั้งค่าเมนูเองทั้งหมด', simpleDesc: 'ตั้งค่าเมนูเองทั้งหมด' },
 ];
 
 const TRUST = [
@@ -39,6 +44,7 @@ export default function Signup() {
   const [pw2, setPw2] = useState('');
   const [show, setShow] = useState(false);
   const [tpl, setTpl] = useState('aharn');
+  const [mode, setMode] = useState<'simple' | 'full'>('simple');
 
   const score = strength(pw);
   const mismatch = pw2.length > 0 && pw !== pw2;
@@ -58,6 +64,7 @@ export default function Signup() {
         shopName: String(f.get('shopName') ?? '').trim(),
         tableCount: Number(f.get('tables') || 12),
         template: tpl,
+        mode,
       });
       router.push('/pos');
     } catch (x) {
@@ -94,7 +101,7 @@ export default function Signup() {
       <form onSubmit={submit} style={{ flex: '1 1 480px', padding: '48px clamp(20px, 5vw, 64px)', display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 820 }}>
         <header>
           <h2 style={{ fontSize: 26, margin: '0 0 6px' }} className="display">สร้างบัญชีเจ้าของร้าน</h2>
-          <p className="muted" style={{ margin: 0 }}>กรอกข้อมูลให้ครบ 3 ส่วน บัญชีนี้จะเป็นผู้ดูแลระบบของร้าน</p>
+          <p className="muted" style={{ margin: 0 }}>กรอกข้อมูลให้ครบ 4 ส่วน บัญชีนี้จะเป็นผู้ดูแลระบบของร้าน</p>
         </header>
 
         <section style={section} aria-labelledby="s1">
@@ -142,9 +149,30 @@ export default function Signup() {
           </p>
         </section>
 
-        <section style={{ ...section, borderBottom: 'none', paddingBottom: 0 }} aria-labelledby="s3">
-          <h3 id="s3" style={h3}>3. เมนูเริ่มต้น</h3>
+        <section style={section} aria-labelledby="s3">
+          <h3 id="s3" style={h3}>3. รูปแบบการใช้งาน</h3>
           <div role="radiogroup" aria-labelledby="s3" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {MODES.map((m) => {
+              const on = mode === m.v;
+              return (
+                <label key={m.v} style={{
+                  display: 'flex', gap: 12, alignItems: 'flex-start', padding: '14px 16px', cursor: 'pointer',
+                  borderRadius: 10, border: `1.5px solid ${on ? 'var(--accent)' : '#D9D9D4'}`,
+                  background: on ? 'var(--accent-soft)' : 'transparent',
+                }}>
+                  <input type="radio" name="mode" value={m.v} checked={on} onChange={() => setMode(m.v)}
+                    style={{ width: 20, height: 20, marginTop: 2, accentColor: 'var(--accent)' }} />
+                  <span><strong style={{ display: 'block' }}>{m.title}</strong><span className="muted" style={{ fontSize: 14 }}>{m.desc}</span></span>
+                </label>
+              );
+            })}
+          </div>
+          <p className="muted" style={{ margin: 0, fontSize: 14 }}>เปลี่ยนได้ทุกเมื่อที่ “ตั้งค่าร้าน” ข้อมูลที่กรอกไว้ไม่หาย</p>
+        </section>
+
+        <section style={{ ...section, borderBottom: 'none', paddingBottom: 0 }} aria-labelledby="s4">
+          <h3 id="s4" style={h3}>4. เมนูเริ่มต้น</h3>
+          <div role="radiogroup" aria-labelledby="s4" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {TEMPLATES.map((t) => {
               const on = tpl === t.v;
               return (
@@ -155,7 +183,7 @@ export default function Signup() {
                 }}>
                   <input type="radio" name="template" value={t.v} checked={on} onChange={() => setTpl(t.v)}
                     style={{ width: 20, height: 20, marginTop: 2, accentColor: 'var(--accent)' }} />
-                  <span><strong style={{ display: 'block' }}>{t.title}</strong><span className="muted" style={{ fontSize: 14 }}>{t.desc}</span></span>
+                  <span><strong style={{ display: 'block' }}>{t.title}</strong><span className="muted" style={{ fontSize: 14 }}>{mode === 'simple' ? t.simpleDesc : t.desc}</span></span>
                 </label>
               );
             })}

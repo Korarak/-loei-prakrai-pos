@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import { Icon, type IconName } from '@/lib/icons';
+import { isSimple, useMe } from '@/lib/useMe';
 
 export type OwnerTab = 'profit' | 'menu' | 'options' | 'customers' | 'stock' | 'expenses' | 'reports' | 'staff' | 'audit' | 'settings';
 export type Tone = 'setup' | 'menu' | 'sell' | 'money' | 'system';
@@ -28,10 +31,17 @@ export const OWNER_GROUPS: Array<{ tone: Tone; label: string; tabs: Array<[Owner
   ] },
 ];
 
+/** What a simple-mode shop keeps in its back office: the menu, the sales report, staff and settings. */
+const SIMPLE_TABS: OwnerTab[] = ['menu', 'reports', 'staff', 'settings'];
+
 export function OwnerTabs({ active }: { active: OwnerTab }) {
+  const { me } = useMe();
+  const groups = OWNER_GROUPS
+    .map((g) => (isSimple(me) ? { ...g, tabs: g.tabs.filter(([k]) => SIMPLE_TABS.includes(k)).map(([k, h, l, i]) => [k, h, k === 'reports' ? 'รายงานยอดขาย' : l, i] as typeof g.tabs[number]) } : g))
+    .filter((g) => g.tabs.length > 0);
   return (
     <nav className="onav no-print" aria-label="หลังบ้าน">
-      {OWNER_GROUPS.map((g, gi) => (
+      {groups.map((g, gi) => (
         <div key={g.tone} className={`onav-group tone-${g.tone}`}>
           <div className="onav-cap"><span className="onav-step" aria-hidden="true">{gi + 1}</span>{g.label}</div>
           <div className="onav-items">

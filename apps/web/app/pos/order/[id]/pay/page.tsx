@@ -8,7 +8,7 @@ import { api, errText } from '@/lib/api';
 import { Icon, type IconName } from '@/lib/icons';
 import { BackIcon } from '@/lib/ui';
 import { PromptPayQr } from '@/lib/PromptPayQr';
-import { terminalFor, useMe } from '@/lib/useMe';
+import { isSimple, terminalFor, useMe } from '@/lib/useMe';
 import { CustomerPicker } from './CustomerPicker';
 
 type Method = 'cash' | 'promptpay' | 'card' | 'transfer';
@@ -35,6 +35,8 @@ export default function PayPage() {
   const terminal = me ? terminalFor(me) : null;
   const vat = !!me?.tenant.vat_registered;
   const abbOk = vat && !!terminal?.rd_pos_id;
+  // A simple shop that is not VAT-registered has exactly one possible document, so there is nothing to choose.
+  const showDoc = !(isSimple(me) && !vat);
   const docChoice: DocType = doc ?? (!vat ? 'RECEIPT' : abbOk ? 'ABB' : 'FULL');
 
   if (!view || !me) return <main style={{ padding: 40 }}>{err || 'กำลังโหลด…'}</main>;
@@ -164,8 +166,8 @@ export default function PayPage() {
         </section>
 
         <section aria-label="เอกสาร" className="pay-doc">
-          <div className="row" style={{ gap: 10 }}><span style={{ width: 26, height: 26, borderRadius: 13, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontSize: 14, fontWeight: 700 }}>3</span><Icon name="fileText" size={20} /><span style={{ fontSize: 18, fontWeight: 700 }}>เอกสารที่ออก</span></div>
-          {docOptions.map(([d, label, sub, enabled]) => (
+          {showDoc && <div className="row" style={{ gap: 10 }}><span style={{ width: 26, height: 26, borderRadius: 13, background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontSize: 14, fontWeight: 700 }}>3</span><Icon name="fileText" size={20} /><span style={{ fontSize: 18, fontWeight: 700 }}>เอกสารที่ออก</span></div>}
+          {showDoc && docOptions.map(([d, label, sub, enabled]) => (
             <button key={d} disabled={!enabled} aria-pressed={docChoice === d} onClick={() => setDoc(d)} style={choiceStyle(docChoice === d, enabled)}>
               <span style={{ width: 22, height: 22, flexShrink: 0, borderRadius: 11, border: docChoice === d ? '7px solid var(--accent)' : '2px solid #9AA39C' }} />
               <span><b style={{ display: 'block' }}>{label}</b><span className="muted" style={{ fontSize: 13 }}>{sub}</span></span>

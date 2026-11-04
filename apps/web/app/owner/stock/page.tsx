@@ -4,7 +4,7 @@ import { formatBaht } from '@prakai/core';
 import { useEffect, useMemo, useState } from 'react';
 import { api, errText } from '@/lib/api';
 import { dayLabel, fmtQty, MonthPicker, PageTitle, Sheet, Stat, thisMonth, today, toSatang, UNIT } from '@/lib/owner';
-import { useMe } from '@/lib/useMe';
+import { useFullOnly, useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
 import { Icon } from '@/lib/icons';
@@ -19,6 +19,7 @@ type Panel = null | 'purchase' | 'waste' | 'count' | 'new' | 'newPrep' | { edit:
 
 export default function Stock() {
   const { me } = useMe();
+  const hidden = useFullOnly(me);
   const [ings, setIngs] = useState<any[] | null>(null);
   const [month, setMonth] = useState(thisMonth());
   const [purchases, setPurchases] = useState<any>(null);
@@ -37,6 +38,7 @@ export default function Stock() {
   const low = active.filter((i) => i.low);
   const negative = active.filter((i) => i.on_hand < 0);
 
+  if (hidden) return null;
   return (
     <>
       <TopBar me={me} active="owner" />

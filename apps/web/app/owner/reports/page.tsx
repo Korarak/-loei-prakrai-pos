@@ -3,7 +3,7 @@
 import { formatBaht } from '@prakai/core';
 import { useEffect, useState } from 'react';
 import { api, errText } from '@/lib/api';
-import { useMe } from '@/lib/useMe';
+import { isSimple, useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
 import { DaySection } from './DaySection';
@@ -41,6 +41,9 @@ export default function Reports() {
     a.click();
   }
 
+  const simple = isSimple(me);
+  // Simple shops that do not charge VAT have no sales-tax report to file; VAT shops keep it.
+  const taxReport = !simple || !!me?.tenant.vat_registered;
   const methodTotal = (m: string) => daily?.methods.find((x: any) => x.method === m)?.amount ?? 0;
   return (
     <>
@@ -49,22 +52,23 @@ export default function Reports() {
         <div className="row">
           <OwnerTabs active="reports" />
           <span className="spacer" />
-          <label className="row muted" style={{ gap: 8 }}>เดือนภาษี
+          {taxReport && <label className="row muted" style={{ gap: 8 }}>เดือนภาษี
             <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} style={{ height: 48, padding: '0 12px', borderRadius: 12, border: '1px solid var(--line-2)' }} />
-          </label>
+          </label>}
         </div>
 
         {daily && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+            {simple && <div className="card" style={{ padding: '12px 16px', background: 'var(--accent-soft)', borderColor: 'var(--accent)' }}><div style={{ color: 'var(--accent-ink)' }}>ยอดขายวันนี้</div><div style={{ fontSize: 28, fontWeight: 700, color: 'var(--accent-ink)' }}>฿{formatBaht(daily.methods.reduce((s: number, x: any) => s + x.amount, 0))}</div></div>}
             <div className="card" style={{ padding: '12px 16px' }}><div className="muted">บิลวันนี้</div><div style={{ fontSize: 28, fontWeight: 700 }}>{daily.bills}</div></div>
             <div className="card" style={{ padding: '12px 16px' }}><div className="muted">เงินสดวันนี้</div><div style={{ fontSize: 28, fontWeight: 700 }}>฿{formatBaht(methodTotal('cash'))}</div></div>
             <div className="card" style={{ padding: '12px 16px' }}><div className="muted">พร้อมเพย์/โอน/บัตร</div><div style={{ fontSize: 28, fontWeight: 700 }}>฿{formatBaht(methodTotal('promptpay') + methodTotal('transfer') + methodTotal('card'))}</div></div>
-            {rep && <div className="card" style={{ padding: '12px 16px', background: 'var(--accent-soft)', borderColor: 'var(--accent)' }}>
+            {rep && taxReport && <div className="card" style={{ padding: '12px 16px', background: 'var(--accent-soft)', borderColor: 'var(--accent)' }}>
               <div style={{ color: 'var(--accent-ink)' }}>ภาษีขาย {monthLabel(month)}</div><div style={{ fontSize: 28, fontWeight: 700, color: 'var(--accent-ink)' }}>{formatBaht(rep.totals.vat)}</div></div>}
           </div>
         )}
 
-        <section className="card" style={{ padding: '12px 18px' }}>
+        {taxReport && <section className="card" style={{ padding: '12px 18px' }}>
           <div className="row" style={{ paddingBottom: 8 }}>
             <PageTitle icon="percent" tone="money" size={20}>รายงานภาษีขาย · {monthLabel(month)}</PageTitle>
             <span className="muted" style={{ fontSize: 14 }}>ใบอย่างย่อสรุปรายวันต่อเครื่อง · ใบเต็มรูปและใบลดหนี้แสดงรายใบ{rep?.voidedCount ? ` · ยกเลิก ${rep.voidedCount} ใบ (ไม่รวมในยอด)` : ''}</span>
@@ -98,13 +102,13 @@ export default function Reports() {
             </tbody>
           </table>
           {rep?.rows.length === 0 && <p className="muted">ยังไม่มีใบกำกับภาษีในเดือนนี้</p>}
-        </section>
+        </section>}
 
-        <VatReturnSection month={month} />
+        {taxReport && <VatReturnSection month={month} />}
 
-        <InventorySection month={month} />
+        {!simple && <InventorySection month={month} />}
 
-        <DaySection />
+        <DaySection simple={simple} />
       </main>
     </>
   );

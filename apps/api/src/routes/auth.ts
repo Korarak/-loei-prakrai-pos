@@ -18,6 +18,8 @@ const Signup = z.object({
   shopName: z.string().trim().min(1).max(100),
   template: z.enum(['aharn', 'steak', 'blank']).default('aharn'),
   tableCount: z.number().int().min(0).max(100).default(12),
+  /** Simple = menu + sales only. Omitted means full, so existing callers keep their behaviour. */
+  mode: z.enum(['simple', 'full']).default('full'),
 });
 
 const Login = z.object({ email: z.string().trim().toLowerCase().email(), password: z.string().min(1) });
@@ -54,8 +56,9 @@ export async function authRoutes(app: FastifyInstance, ctx: Ctx) {
         `INSERT INTO users (email, phone, name, password_hash, last_login_at) VALUES ($1, $2, $3, $4, now()) RETURNING id`,
         [b.email, b.phone ?? null, b.name, passwordHash]);
       const t = await one<{ id: string }>(c,
-        `INSERT INTO tenants (name, slug) VALUES ($1, $2) RETURNING id`,
-        [b.shopName, 'r-' + randomBytes(4).toString('hex')]);
+        `INSERT INTO tenants (name, slug, ui_mode, qr_order_enabled) VALUES ($1, $2, $3, $4) RETURNING id`,
+        // Simple shops have no stickers or inbox for QR orders until they ask for them.
+        [b.shopName, 'r-' + randomBytes(4).toString('hex'), b.mode, b.mode === 'full']);
       await c.query(`INSERT INTO tenant_members (tenant_id, user_id, role) VALUES ($1, $2, 'owner')`, [t!.id, u!.id]);
       return { userId: u!.id, tenantId: t!.id };
     });
@@ -68,9 +71,10 @@ export async function authRoutes(app: FastifyInstance, ctx: Ctx) {
       }
       if (b.template === 'aharn') {
         await seedTemplate(c);
-        await seedCosting(c);
+        // Simple shops sell without stock or recipes; costing can be added later by switching to full mode.
+        if (b.mode === 'full') await seedCosting(c);
       }
-      if (b.template === 'steak') await seedSteak(c);
+      if (b.template === 'steak') await seedSteak(c, { menuOnly: b.mode === 'simple' });
     });
 
     reply.status(201);
@@ -208,7 +212,7 @@ export async function authRoutes(app: FastifyInstance, ctx: Ctx) {
     const [user, tenant] = await withPlatform(ctx.db, (c) => Promise.all([
       one(c, `SELECT id, name, email FROM users WHERE id = $1`, [s.userId]),
       one(c, `SELECT id, name, status, legal_name, tax_id, address, vat_registered, vat_registered_at,
-                     price_includes_vat, service_charge_bp, cash_rounding, promptpay_id, logo_url, logo_on_receipt FROM tenants WHERE id = $1`, [s.tenantId]),
+                     price_includes_vat, service_charge_bp, cash_rounding, promptpay_id, logo_url, logo_on_receipt, ui_mode FROM tenants WHERE id = $1`, [s.tenantId]),
     ]));
     const [branches, terminals] = await withTenant(ctx.db, s.tenantId, (c) => Promise.all([
       many(c, `SELECT id, name, branch_code, address FROM branches ORDER BY name`),

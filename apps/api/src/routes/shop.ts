@@ -22,6 +22,8 @@ const Settings = z.object({
     .refine((v) => v === null || v === '' || isValidPromptPayId(v), 'PromptPay ID is a 10-digit phone or 13-digit ID')
     .transform((v) => v || null),
   logoOnReceipt: z.boolean(),
+  /** 'simple' hides back-office modules and opens the cash shift by itself; data is never dropped. */
+  uiMode: z.enum(['simple', 'full']),
 }).partial();
 
 const Terminal = z.object({
@@ -34,10 +36,14 @@ const Category = z.object({ name: z.string().trim().min(1).max(50), sort: z.numb
 const NewTerminal = z.object({ name: z.string().trim().min(1).max(50) });
 
 /** Every shop table in a data export, with columns that must never leave the server removed. */
-const EXPORT_TABLES = ['branches', 'terminals', 'menu_categories', 'menu_items', 'dining_tables', 'orders', 'order_lines',
+export const EXPORT_TABLES = ['branches', 'terminals', 'menu_categories', 'menu_items', 'dining_tables', 'orders', 'order_lines',
   'payments', 'tax_documents', 'doc_sequences', 'ingredients', 'recipe_lines', 'purchases', 'purchase_lines',
   'stock_movements', 'stock_counts', 'stock_count_lines', 'expenses', 'prep_lines', 'shifts', 'cash_moves', 'audit_log',
-  'modifier_groups', 'modifiers', 'modifier_ingredients', 'menu_item_modifier_groups', 'customers'] as const;
+  'modifier_groups', 'modifiers', 'modifier_ingredients', 'menu_item_modifier_groups', 'customers',
+  'printers', 'qr_requests', 'qr_request_lines'] as const;
+
+/** Shop tables left out of the export on purpose: print jobs are throw-away raster bitmaps. */
+export const EXPORT_SKIPPED = ['print_jobs'] as const;
 
 const Item = z.object({
   categoryId: z.string().uuid().nullable(),
@@ -60,7 +66,7 @@ const Branch = z.object({
 const COLS = {
   name: 'name', legalName: 'legal_name', taxId: 'tax_id', address: 'address', vatRegistered: 'vat_registered',
   vatRegisteredAt: 'vat_registered_at', priceIncludesVat: 'price_includes_vat',
-  serviceChargeBp: 'service_charge_bp', cashRounding: 'cash_rounding', promptpayId: 'promptpay_id', logoOnReceipt: 'logo_on_receipt',
+  serviceChargeBp: 'service_charge_bp', cashRounding: 'cash_rounding', promptpayId: 'promptpay_id', logoOnReceipt: 'logo_on_receipt', uiMode: 'ui_mode',
 } as const;
 
 export async function shopRoutes(app: FastifyInstance, ctx: Ctx) {

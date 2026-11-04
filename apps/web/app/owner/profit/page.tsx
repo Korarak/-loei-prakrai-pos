@@ -4,7 +4,7 @@ import { formatBaht } from '@prakai/core';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { EXPENSE_LABEL, fmtQty, monthLabel, MonthPicker, PageTitle, Stat, thisMonth, UNIT } from '@/lib/owner';
-import { useMe } from '@/lib/useMe';
+import { useFullOnly, useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
 
@@ -26,6 +26,7 @@ function Line({ label, value, strong, minus, indent }: { label: string; value: n
 
 export default function Profit() {
   const { me } = useMe();
+  const hidden = useFullOnly(me);
   const [month, setMonth] = useState(thisMonth());
   const [pnl, setPnl] = useState<any>(null);
   const [menu, setMenu] = useState<any>(null);
@@ -39,6 +40,7 @@ export default function Profit() {
     api('GET', `/api/reports/stock-variance?month=${month}`).then(setVariance).catch(() => {});
   }, [month]);
 
+  if (hidden) return null;
   return (
     <>
       <TopBar me={me} active="owner" />

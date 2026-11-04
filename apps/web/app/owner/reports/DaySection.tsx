@@ -11,7 +11,7 @@ const hhmm = (iso: string) => new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia
 const signed = (v: number) => (v > 0 ? '+' : '') + formatBaht(v);
 
 /** กะและเอกสารของวันที่เลือก: ดูเงินขาด/เกินรายกะ และเปิดเอกสารเพื่อยกเลิกหรือออกใบลดหนี้ */
-export function DaySection() {
+export function DaySection({ simple = false }: { simple?: boolean }) {
   const [date, setDate] = useState(today());
   const [q, setQ] = useState('');
   const [shifts, setShifts] = useState<any[] | null>(null);
@@ -33,7 +33,7 @@ export function DaySection() {
   return (
     <section className="card" style={{ padding: '12px 18px', display: 'grid', gap: 12 }}>
       <div className="row" style={{ flexWrap: 'wrap' }}>
-        <h2 style={{ margin: 0, fontSize: 20 }}>กะและเอกสาร · {dayLabel(date)}</h2>
+        <h2 style={{ margin: 0, fontSize: 20 }}>{simple ? 'บิลที่ขาย' : 'กะและเอกสาร'} · {dayLabel(date)}</h2>
         <span className="spacer" />
         <label className="row muted" style={{ gap: 8 }}>วันที่
           <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)}
@@ -42,7 +42,7 @@ export function DaySection() {
       </div>
       {err && <div className="error">{err}</div>}
 
-      <div className="tbl-wrap">
+      {!simple && <div className="tbl-wrap">
         <table className="tbl">
           <thead><tr><th>เครื่อง</th><th>เปิด–ปิด</th><th>ผู้ปิด</th><th className="num">บิล</th><th className="num">ยอดขาย</th>
             <th className="num">เงินสดควรมี</th><th className="num">นับได้</th><th className="num">ขาด/เกิน</th></tr></thead>
@@ -64,7 +64,7 @@ export function DaySection() {
           </tbody>
         </table>
         {shifts?.length === 0 && <p className="muted">ไม่มีกะในวันนี้</p>}
-      </div>
+      </div>}
 
       <div className="row">
         <h3 style={{ margin: 0, fontSize: 17 }}>เอกสาร</h3>

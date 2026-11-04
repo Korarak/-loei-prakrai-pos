@@ -7,7 +7,7 @@ import { useConfirm } from '@/lib/dialog';
 import { Icon } from '@/lib/icons';
 import { PageTitle, Stat } from '@/lib/owner';
 import { BowlIcon, tintFor } from '@/lib/ui';
-import { useMe } from '@/lib/useMe';
+import { isSimple, useMe } from '@/lib/useMe';
 import { TopBar } from '../../pos/TopBar';
 import { OwnerTabs } from '../OwnerTabs';
 import { ItemSheet, TARGET_PCT } from './ItemSheet';
@@ -39,7 +39,9 @@ export default function MenuPage() {
   const [groups, setGroups] = useState<any[]>([]);
   const [open, setOpen] = useState<any>(null);
   const [adding, setAdding] = useState(false);
-  const [mode, setMode] = useState<'layout' | 'cost'>('layout');
+  const [mode0, setMode] = useState<'layout' | 'cost'>('layout');
+  const simple = isSimple(me);
+  const mode = simple ? 'layout' : mode0; // simple shops have no recipes, so no cost view
   const [sel, setSel] = useState<string | null>(null);
   const [q, setQ] = useState('');
   const [drag, setDrag] = useState<{ kind: 'cat' | 'item'; id: string } | null>(null);
@@ -125,10 +127,10 @@ export default function MenuPage() {
 
         <div className="row" style={{ flexWrap: 'wrap', gap: 10 }}>
           <PageTitle icon="book" tone="menu" size={22}>เมนู</PageTitle>
-          <div className="row" role="group" aria-label="มุมมอง" style={{ gap: 6 }}>
+          {!simple && <div className="row" role="group" aria-label="มุมมอง" style={{ gap: 6 }}>
             <button className="btn" aria-pressed={mode === 'layout'} onClick={() => setMode('layout')}><Icon name="table" /> จัดลำดับเมนู</button>
             <button className="btn" aria-pressed={mode === 'cost'} onClick={() => setMode('cost')}><Icon name="receipt" /> ต้นทุน</button>
-          </div>
+          </div>}
           <span className="spacer" />
           <input aria-label="ค้นหาเมนู" placeholder="ค้นหาเมนู" value={q} onChange={(e) => setQ(e.target.value)} style={{ ...inputStyle, minWidth: 180 }} />
           <button className="btn btn-primary" onClick={() => setAdding(true)}><Icon name="plus" /> เพิ่มเมนู</button>
@@ -155,7 +157,7 @@ export default function MenuPage() {
                     return (
                       <div key={x.id}>
                         <button className="btn" style={{ minHeight: 34, fontSize: 14 }} onClick={() => { setSel(x.id); setQ(''); }}>{x.name} · {hits.length} รายการ — เปิดหมวดนี้เพื่อจัดลำดับ</button>
-                        {hits.map((i) => <ItemRow key={i.id} item={i} onOpen={() => setOpen(i)} onPatch={(patch) => patchItem(i.id, patch)} />)}
+                        {hits.map((i) => <ItemRow key={i.id} simple={simple} item={i} onOpen={() => setOpen(i)} onPatch={(patch) => patchItem(i.id, patch)} />)}
                       </div>
                     );
                   })}
@@ -174,7 +176,7 @@ export default function MenuPage() {
                     onDragOver={(e) => { if (drag?.kind === 'item') e.preventDefault(); }}
                     onDrop={() => { if (drag?.kind === 'item' && current.id !== NO_CAT && !current.items.some((i) => i.id === drag.id)) { moveItemToCat(drag.id, current.id); setDrag(null); } }}>
                     {current.items.map((i, n) => (
-                      <ItemRow key={i.id} item={i} n={n} last={n === current.items.length - 1} dragging={drag?.id === i.id} over={over === i.id && drag?.kind === 'item'}
+                      <ItemRow key={i.id} simple={simple} item={i} n={n} last={n === current.items.length - 1} dragging={drag?.id === i.id} over={over === i.id && drag?.kind === 'item'}
                         onOpen={() => setOpen(i)} onPatch={(patch) => patchItem(i.id, patch)}
                         onDragStart={() => setDrag({ kind: 'item', id: i.id })} onDragEnd={() => { setDrag(null); setOver(null); }}
                         onDragOver={(e) => { if (drag?.kind === 'item') { e.preventDefault(); setOver(i.id); } }} onDrop={(e) => { e.stopPropagation(); dropOnItem(i.id); }}
@@ -229,7 +231,7 @@ export default function MenuPage() {
         )}
       </main>
       {(open || adding) && (
-        <ItemSheet item={open} ings={ings} cats={cats} groups={groups} items={items ?? []} vatRatio={vatRatio}
+        <ItemSheet simple={simple} item={open} ings={ings} cats={cats} groups={groups} items={items ?? []} vatRatio={vatRatio}
           vatOn={!!me?.tenant.vat_registered} vatIncl={!!me?.tenant.price_includes_vat}
           defaultCategoryId={adding && current && current.id !== NO_CAT ? current.id : undefined}
           onClose={() => { setOpen(null); setAdding(false); }} onSaved={() => { setOpen(null); setAdding(false); load(); }}
@@ -312,8 +314,8 @@ function CategoryHeader({ section, onRename, onDelete }: { section: { id: string
  * One dish. Everything done daily is on the row itself: sold out today, price, and whether the food cost is healthy.
  * Without the ordering props (search results) the row has no drag handle or arrows.
  */
-function ItemRow({ item: i, n, last, dragging, over, onOpen, onPatch, onDragStart, onDragEnd, onDragOver, onDrop, onUp, onDown }: {
-  item: any; n?: number; last?: boolean; dragging?: boolean; over?: boolean;
+function ItemRow({ simple, item: i, n, last, dragging, over, onOpen, onPatch, onDragStart, onDragEnd, onDragOver, onDrop, onUp, onDown }: {
+  simple?: boolean; item: any; n?: number; last?: boolean; dragging?: boolean; over?: boolean;
   onOpen: () => void; onPatch: (p: { active?: boolean; price?: number }) => void;
   onDragStart?: () => void; onDragEnd?: () => void; onDragOver?: (e: React.DragEvent) => void; onDrop?: (e: React.DragEvent) => void;
   onUp?: () => void; onDown?: () => void;
@@ -344,10 +346,10 @@ function ItemRow({ item: i, n, last, dragging, over, onOpen, onPatch, onDragStar
           {i.station === 'bar' && <span className="pill" style={{ marginLeft: 8, background: 'var(--info-soft)', color: 'var(--info-ink)' }}>บาร์</span>}
         </span>
       </button>
-      <span className="pill" title={i.recipe_lines ? 'Food cost ตามสูตร' : 'ยังไม่ได้ใส่สูตร'}
+      {!simple && <span className="pill" title={i.recipe_lines ? 'Food cost ตามสูตร' : 'ยังไม่ได้ใส่สูตร'}
         style={{ background: costly ? 'var(--warn-soft)' : 'var(--line-soft)', color: costly ? 'var(--warn-ink)' : i.recipe_lines ? 'var(--accent-ink)' : 'var(--muted)', whiteSpace: 'nowrap' }}>
         {i.recipe_lines ? `ต้นทุน ${i.food_cost_pct}%` : 'ไม่มีสูตร'}
-      </span>
+      </span>}
       {editing ? (
         <input aria-label={`ราคา ${i.name}`} autoFocus inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} onBlur={savePrice}
           onKeyDown={(e) => { if (e.key === 'Enter') savePrice(); if (e.key === 'Escape') setEditing(false); }}

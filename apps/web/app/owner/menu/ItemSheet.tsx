@@ -29,8 +29,9 @@ const H = ({ n, children, hint }: { n: number; children: React.ReactNode; hint?:
  * One panel for adding and editing a dish: the basics, the questions it asks, and its recipe.
  * Nothing is saved until the single button at the bottom, and the cost updates as you type.
  */
-export function ItemSheet({ item, ings, cats, groups, items, vatRatio, vatOn, vatIncl, defaultCategoryId, onClose, onSaved, onIngsChanged }: {
-  item: any | null; defaultCategoryId?: string; ings: any[]; cats: any[]; groups: any[]; items: any[]; vatRatio: number; vatOn: boolean; vatIncl: boolean;
+export function ItemSheet({ simple = false, item, ings, cats, groups, items, vatRatio, vatOn, vatIncl, defaultCategoryId, onClose, onSaved, onIngsChanged }: {
+  /** Simple shops get the basics only; recipe and options of an existing dish are kept untouched on save. */
+  simple?: boolean; item: any | null; defaultCategoryId?: string; ings: any[]; cats: any[]; groups: any[]; items: any[]; vatRatio: number; vatOn: boolean; vatIncl: boolean;
   onClose: () => void; onSaved: () => void; onIngsChanged: () => void;
 }) {
   const confirm = useConfirm();
@@ -167,6 +168,7 @@ export function ItemSheet({ item, ings, cats, groups, items, vatRatio, vatOn, va
           </label>
         </div>
 
+        {!simple && <>
         <H n={2}>ตัวเลือกตอนสั่ง</H>
         <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
           {groups.filter((g) => g.active || groupIds.includes(g.id)).map((g) => (
@@ -216,6 +218,7 @@ export function ItemSheet({ item, ings, cats, groups, items, vatRatio, vatOn, va
           )}
           {rows.length === 0 && <span className="muted">ยังไม่มีสูตร</span>}
         </div>
+        </>}
         {err && <div className="error" role="alert">{err}</div>}
         <button className="btn btn-primary btn-lg" onClick={save} disabled={!valid || busy}>
           {busy ? 'กำลังบันทึก…' : <><Icon name={item || savedId ? 'save' : 'plus'} size={22} /> {item || savedId ? 'บันทึก' : 'เพิ่มเมนู'}</>}
